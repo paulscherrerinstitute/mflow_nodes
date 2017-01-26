@@ -69,12 +69,12 @@ What exactly each command means to a specific node depends on which processor is
 on the existing nodes, see the **Nodes documentation** chapter.
 
 ### Web interface
-Each node start a web interface on **0.0.0.0** using the port provided at the node startup (default port is **8080**).
+Each node starts a web interface on **0.0.0.0** using the port provided at the node startup (default port is **8080**).
 Navigate your browser to **0.0.0.0:8080** (or corresponding port) to view the interface.
 
 ### REST api
 The web server running the web interface exposes the REST api as well. All the functionality available via the web 
-interface is also available via REST api. The following endpoints are exposed:
+interface is also available via the REST api. The following endpoints are exposed:
 
 - **/start** [GET]: Start the processor.
 - **/stop** [GET]: Stop the processor.
@@ -110,7 +110,7 @@ and **data**.
 is not always present.
 - **"data"** [optional] contains any data that the endpoint returned. Note that this field is not always present either.
 
-**Example response (from /status request on write\_node.py)**:
+**Example response** (from **/status** request on **write\_node.py**):
 ```json
 {
   "status": "ok", 
@@ -143,7 +143,7 @@ Run the following commands, each in a separate terminal (from the **root** proje
 ```bash
 # Start a proxy node:
 #   - listen on localhost port 40000
-#   - forward the stream to localhost port 400001
+#   - forward the stream to localhost port 40001
 #   - start the web interface on port 8080
 python scripts/proxy_node.py tcp://127.0.0.1:40000 tcp://127.0.0.1:40001 --rest_port 8080
 ```
@@ -151,7 +151,7 @@ python scripts/proxy_node.py tcp://127.0.0.1:40000 tcp://127.0.0.1:40001 --rest_
 ```bash
 # Start a compression node:
 #   - listen on localhost port 40001
-#   - forward the stream to localhost port 400002
+#   - forward the stream to localhost port 40002
 #   - start the web interface on port 8081
 python scripts/compression_node.py tcp://127.0.0.1:40001 tcp://127.0.0.1:40002 --rest_port 8081
 ```
@@ -166,7 +166,7 @@ python scripts/proxy_node.py tcp://127.0.0.1:40002 tcp://127.0.0.1:40003 --rest_
 ```bash
 # Start a writer node:
 #   - listen on localhost port 40003
-#   - save the stream to sample_output.h5
+#   - save the stream to file sample_output.h5
 #   - start the web interface on port 8083
 python scripts/write_node.py tcp://127.0.0.1:40003 sample_output.h5 --rest_port 8083
 ```

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <script type="text/javascript" src="static/jquery-3.1.1.min.js"></script>
+    <script type="text/javascript" src="static/notify.min.js"></script>
+    <script type="text/javascript" src="static/index.js"></script>
+
+    <title>Control page</title>
+</head>
+<body>
+    <h1>Node: <span id="processor_name"></span></h1>
+
+    <h2>Commands</h2>
+    <button id="start_processor" class="start_button">Start</button>
+    <button id="stop_processor" class="stop_button">Stop</button>
+
+    <h2>Status</h2>
+    <span id="is_running_value"></span>
+
+    <h2>Process parameters</h2>
+    <button id="update_parameters">Update parameters</button></br>
+    <textarea id="process_parameters" rows="16" cols="80"></textarea>
+
+    <h2>Summary</h2>
+    <pre id="processor_help"></pre>
+</body>
+</html>

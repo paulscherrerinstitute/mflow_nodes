@@ -1,0 +1,20 @@
+package:
+    name: mflow_nodes
+    version: 0.0.1
+
+source:
+    path: ..
+
+requirements:
+    build:
+        - python
+    run:
+        - python
+        - mflow
+        - bottle
+        - h5py
+        - numpy
+        - bitshuffle
+
+about:
+    summary: "Mflow nodes and their processors."
