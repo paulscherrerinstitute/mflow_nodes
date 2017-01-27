@@ -10,7 +10,7 @@ requirements:
         - python
     run:
         - python
-        - mflow
+        - mflow >=0.0.15
         - bottle
         - h5py
         - numpy
