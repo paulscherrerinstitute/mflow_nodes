@@ -90,4 +90,9 @@ def start_web_interface(external_process, host, port, processor_instance=None):
         return json.dumps({"status": "error",
                            "message": str(error.exception)})
 
-    run(app=app, host=host, port=port)
+    try:
+        run(app=app, host=host, port=port)
+    finally:
+        # Close the external processor when terminating the web server.
+        if external_process.is_running():
+            external_process.stop()
