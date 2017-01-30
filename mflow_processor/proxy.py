@@ -18,9 +18,10 @@ class ProxyProcessor(StreamProcessor):
     """
     _logger = getLogger(__name__)
 
-    def __init__(self, proxy_function):
+    def __init__(self, proxy_function, name="Proxy node"):
         self._zmq_forwarder = None
         self._proxy_function = proxy_function
+        self.__name__ = name
 
         # Parameters to set.
         self.forwarding_address = None

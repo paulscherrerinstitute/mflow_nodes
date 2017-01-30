@@ -10,7 +10,7 @@ from mflow_processor.proxy import ProxyProcessor
 
 class LZ4CompressionProcessor(ProxyProcessor):
     """
-    LZ4 bitshuffle compression mflow_processor.
+    LZ4 bitshuffle compression
 
     Compresses the provided stream and forwards it to the next node.
 
@@ -24,8 +24,9 @@ class LZ4CompressionProcessor(ProxyProcessor):
     """
     _logger = getLogger(__name__)
 
-    def __init__(self):
-        super().__init__(self)
+    def __init__(self, name="LZ4 bitshuffle compression"):
+        super().__init__(self, name=name)
+
         self.block_size = 2048
 
     def _validate_parameters(self):

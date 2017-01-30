@@ -27,8 +27,8 @@ class HDF5ChunkedWriterProcessor(StreamProcessor):
     """
     _logger = getLogger(__name__)
 
-    def __init__(self):
-        self.__name__ = "H5 chunked writer"
+    def __init__(self, name="H5 chunked writer"):
+        self.__name__ = name
 
         self._file = None
         self._dataset = None
