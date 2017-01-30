@@ -33,6 +33,23 @@ def start_web_interface(external_process, host, port, processor_instance=None):
 
     @app.get("/status")
     def get_status():
+        return {"status": "ok",
+                "data": {"processor_name": processor_name,
+                         "is_running": external_process.is_running(),
+                         "parameters": get_parameters()["data"]}}
+
+    @app.get("/statistics")
+    def get_statistics():
+        return {"status": "ok",
+                "data": {"statistics": external_process.statistics.get_statistics()}}
+
+    @app.get("/statistics_raw")
+    def get_statistics_raw():
+        return {"status": "ok",
+                "data": {"processing_times": external_process.statistics.get_statistics_raw()}}
+
+    @app.get("/parameters")
+    def get_parameters():
 
         # Collect default mflow_processor parameters and update them with the user set.
         if processor_instance:
@@ -44,14 +61,7 @@ def start_web_interface(external_process, host, port, processor_instance=None):
             all_parameters = external_process.current_parameters
 
         return {"status": "ok",
-                "data": {"processor_name": processor_name,
-                         "is_running": external_process.is_running(),
-                         "parameters": all_parameters}}
-
-    @app.get("/parameters")
-    def get_parameters():
-        return {"status": "ok",
-                "data": external_process.current_parameters}
+                "data": all_parameters}
 
     @app.post("/parameters")
     def set_parameter():

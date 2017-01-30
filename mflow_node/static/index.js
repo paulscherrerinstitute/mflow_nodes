@@ -44,6 +44,7 @@ var APIClient = (function(){
     self.get_help = get_request("help");
     self.get_status = get_request("status");
     self.get_parameters = get_request("parameters");
+    self.get_statistics = get_request("statistics");
     self.start = get_request("start");
     self.stop = get_request("stop");
 
@@ -78,6 +79,16 @@ var display_process_data = function(){
         }
 
         $("#process_parameters").val(JSON.stringify(data.parameters, null, 4));
+    });
+
+    APIClient.get_statistics(function(data){
+
+        var statistics_html = '';
+        for(var value in data.statistics){
+            statistics_html += "<li>" + value + " = " + data.statistics[value];
+        }
+
+        $("#processor_statistics").html(statistics_html);
     });
 };
 

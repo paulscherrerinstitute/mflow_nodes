@@ -1,6 +1,8 @@
 import multiprocessing
 import time
+from collections import OrderedDict
 from logging import getLogger
+
 from mflow import mflow
 from .rest_interface import start_web_interface as start_web_interface
 
@@ -51,7 +53,8 @@ def get_zmq_listener(processor, listening_address, receive_timeout=1000, queue_s
     :param receive_raw: Return the raw ZMQ message.
     :return: Function to be executed in an external process.
     """
-    def zmq_listener(stop_event, statistics, parameter_queue):
+
+    def zmq_listener(stop_event, statistics_namespace, parameter_queue):
         # Setup the ZMQ listener and the stream mflow_processor.
         stream = mflow.connect(address=listening_address,
                                conn_type=mflow.CONNECT,
@@ -63,6 +66,9 @@ def get_zmq_listener(processor, listening_address, receive_timeout=1000, queue_s
         while not parameter_queue.empty():
             processor.set_parameter(parameter_queue.get())
 
+        # Start the statistics class.
+        statistics = BasicStatistics(statistics_namespace)
+
         processor.start()
 
         # Setup the receive function according to the raw parameter.
@@ -73,7 +79,12 @@ def get_zmq_listener(processor, listening_address, receive_timeout=1000, queue_s
 
             # Process only valid messages.
             if message:
+                start_time = time.time()
                 processor.process_message(message)
+                stop_time = time.time()
+
+                statistics.save_statistics(time_delta=stop_time - start_time,
+                                           message=message)
 
             # If available, pass parameters to the mflow_processor.
             while not parameter_queue.empty():
@@ -103,8 +114,10 @@ class ExternalProcessWrapper(object):
 
         self.manager = multiprocessing.Manager()
         self.stop_event = multiprocessing.Event()
-        self.statistics = self.manager.Namespace()
         self.parameter_queue = multiprocessing.Queue()
+
+        self.statistics_namespace = self.manager.Namespace()
+        self.statistics = BasicStatistics(self.statistics_namespace)
 
         self.current_parameters = initial_parameters or {}
 
@@ -126,7 +139,7 @@ class ExternalProcessWrapper(object):
             raise Exception("External process is already running.")
 
         self.process = multiprocessing.Process(target=self.process_function,
-                                               args=(self.stop_event, self.statistics, self.parameter_queue))
+                                               args=(self.stop_event, self.statistics_namespace, self.parameter_queue))
 
         self._set_current_parameters()
         self.process.start()
@@ -165,3 +178,37 @@ class ExternalProcessWrapper(object):
     def _set_current_parameters(self):
         for parameter in self.current_parameters.items():
             self.set_parameter(parameter)
+
+
+class BasicStatistics(object):
+    def __init__(self, shared_namespace, buffer_length=1000):
+        self._shared_namespace = shared_namespace
+        self._buffer_length = buffer_length
+        self._shared_namespace.BasicStatistics = []
+
+    def save_statistics(self, time_delta, message):
+        self._shared_namespace.BasicStatistics = [{"message_length": len(message.data["data"][0]),
+                                                   "processing_time": time_delta,
+                                                   "frame": message.data["header"]["frame"]}] \
+                                                 + self._shared_namespace.BasicStatistics[:self._buffer_length - 1]
+
+    def get_statistics_raw(self):
+        return self._shared_namespace.BasicStatistics[:self._buffer_length]
+
+    def get_statistics(self):
+        raw_data = self.get_statistics_raw()
+        # Check if there is any statistics at all.
+        if not raw_data:
+            return {}
+
+        total_number_frames = len(raw_data)
+        total_time = sum((x["processing_time"] for x in raw_data))
+        total_bytes = sum((x["message_length"] for x in raw_data))
+
+        frame_rate = total_number_frames / total_time
+        bytes_rate = total_bytes / total_time
+
+        data = OrderedDict({"frame_per_second": frame_rate,
+                            "bytes_per_second": bytes_rate})
+
+        return data
