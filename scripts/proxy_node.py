@@ -1,7 +1,7 @@
 import logging
 import sys
 from argparse import ArgumentParser
-from mflow_node.stream_node import start_node
+from mflow_node.stream_node import start_stream_node
 from mflow_processor.proxy import ProxyProcessor
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
@@ -23,9 +23,9 @@ def print_function(header, data):
     print("====================================")
 
 
-start_node(processor=ProxyProcessor(proxy_function=print_function),
-           processor_parameters={"forwarding_address": input_args.forwarding_address},
-           listening_address=input_args.listening_address,
-           control_port=input_args.rest_port,
-           receive_raw=True
-           )
+start_stream_node(processor=ProxyProcessor(proxy_function=print_function),
+                  processor_parameters={"forwarding_address": input_args.forwarding_address},
+                  listening_address=input_args.listening_address,
+                  control_port=input_args.rest_port,
+                  receive_raw=True
+                  )

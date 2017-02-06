@@ -1,5 +1,4 @@
 from logging import getLogger
-
 from mflow import mflow, json
 
 

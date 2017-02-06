@@ -2,25 +2,21 @@ import json
 import os
 from collections import OrderedDict
 from logging import getLogger
-
 from bottle import request, run, Bottle, static_file, response
 
 _logger = getLogger(__name__)
 
 
-def start_web_interface(external_process, host, port, processor_instance=None):
+def start_web_interface(process, host, port):
     """
     Start the web interface for the supplied external process.
-    :param external_process: External process to communicate with.
+    :param process: External process to communicate with.
     :param host: Host to start the web interface on.
     :param port: Port to start the web interface on.
-    :param processor_instance: Pass the mflow_processor instance to display parameters and the class documentation.
     :return: None
     """
     app = Bottle()
     static_root_path = os.path.join(os.path.dirname(__file__), "static")
-    processor_name = getattr(processor_instance, "__name__", processor_instance.__class__.__name__) \
-        if processor_instance else "Unknown mflow_processor"
 
     @app.get("/")
     def index():
@@ -29,64 +25,54 @@ def start_web_interface(external_process, host, port, processor_instance=None):
     @app.get("/help")
     def get_help():
         return {"status": "ok",
-                "data": processor_instance.__doc__ or "Sorry, no help available."}
+                "data": process.get_process_help()}
 
     @app.get("/status")
     def get_status():
         return {"status": "ok",
-                "data": {"processor_name": processor_name,
-                         "is_running": external_process.is_running(),
+                "data": {"processor_name": process.get_process_name(),
+                         "is_running": process.is_running(),
                          "parameters": get_parameters()["data"]}}
 
     @app.get("/statistics")
     def get_statistics():
         return {"status": "ok",
-                "data": {"statistics": external_process.statistics.get_statistics()}}
+                "data": {"statistics": process.get_statistics()}}
 
     @app.get("/statistics_raw")
     def get_statistics_raw():
         return {"status": "ok",
-                "data": {"processing_times": external_process.statistics.get_statistics_raw()}}
+                "data": {"processing_times": process.get_statistics_raw()}}
 
     @app.get("/parameters")
     def get_parameters():
-
-        # Collect default mflow_processor parameters and update them with the user set.
-        if processor_instance:
-            all_parameters = OrderedDict((key, value) for key, value in sorted(vars(processor_instance).items())
-                                         if not key.startswith('_'))
-            all_parameters.update(external_process.current_parameters)
-        # Otherwise return only the parameters we know about - the one that were set.
-        else:
-            all_parameters = external_process.current_parameters
-
         return {"status": "ok",
-                "data": all_parameters}
+                "data": process.get_parameters()}
 
     @app.post("/parameters")
     def set_parameter():
         for parameter in request.json.items():
             _logger.debug("Passing parameter '%s'='%s' to external process." % parameter)
-            external_process.set_parameter(parameter)
+            process.set_parameter(parameter)
 
         return {"status": "ok",
                 "message": "Parameters set successfully."}
 
     @app.get("/start")
     def start():
-        _logger.debug("Starting external mflow_processor.")
-        external_process.start()
+        _logger.debug("Starting process.")
+        process.start()
 
         return {"status": "ok",
-                "message": "External process started."}
+                "message": "Process started."}
 
     @app.get("/stop")
     def stop():
-        _logger.debug("Stopping external mflow_processor.")
-        external_process.stop()
+        _logger.debug("Stopping process.")
+        process.stop()
 
         return {"status": "ok",
-                "message": "External process stopped."}
+                "message": "Process stopped."}
 
     @app.get("/static/<filename:path>")
     def get_static(filename):
@@ -104,5 +90,36 @@ def start_web_interface(external_process, host, port, processor_instance=None):
         run(app=app, host=host, port=port)
     finally:
         # Close the external processor when terminating the web server.
-        if external_process.is_running():
-            external_process.stop()
+        if process.is_running():
+            process.stop()
+
+
+class RestInterfacedProcess(object):
+    def get_process_name(self):
+        return getattr(self, "__name__", self.__class__.__name__)
+
+    def get_process_help(self):
+        return self.__doc__ or "Sorry, no help available."
+
+    def start(self):
+        pass
+
+    def stop(self):
+        pass
+
+    def is_running(self):
+        pass
+
+    def get_parameters(self):
+        return OrderedDict((key, value) for key, value
+                           in sorted(vars(self).items())
+                           if not key.startswith('_'))
+
+    def set_parameter(self, parameter):
+        pass
+
+    def get_statistics(self):
+        return self.get_statistics_raw()
+
+    def get_statistics_raw(self):
+        pass

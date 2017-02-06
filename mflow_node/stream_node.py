@@ -4,14 +4,15 @@ from collections import OrderedDict
 from logging import getLogger
 
 from mflow import mflow
-from .rest_interface import start_web_interface as start_web_interface
+
+from mflow_rest_api.rest_interface import start_web_interface, RestInterfacedProcess
 
 _logger = getLogger(__name__)
 
 
-def start_node(processor, processor_parameters=None, listening_address="tcp://127.0.0.1:40000",
-               control_host="0.0.0.0", control_port=8080,
-               start_listener=True, receive_raw=False):
+def start_stream_node(processor, processor_parameters=None, listening_address="tcp://127.0.0.1:40000",
+                      control_host="0.0.0.0", control_port=8080,
+                      start_listener=True, receive_raw=False):
     """
     Start the ZMQ processing node.
     :param processor: Stream mflow_processor that does the actual work on the stream data.
@@ -32,14 +33,14 @@ def start_node(processor, processor_parameters=None, listening_address="tcp://12
     zmq_listener_process = ExternalProcessWrapper(get_zmq_listener(processor=processor,
                                                                    listening_address=listening_address,
                                                                    receive_raw=receive_raw),
-                                                  initial_parameters=processor_parameters)
+                                                  initial_parameters=processor_parameters,
+                                                  processor_instance=processor)
 
     if start_listener:
         zmq_listener_process.start()
 
     # Attach web interface
-    start_web_interface(external_process=zmq_listener_process, host=control_host, port=control_port,
-                        processor_instance=processor)
+    start_web_interface(process=zmq_listener_process, host=control_host, port=control_port)
 
 
 def get_zmq_listener(processor, listening_address, receive_timeout=1000, queue_size=32, receive_raw=False):
@@ -98,18 +99,19 @@ def get_zmq_listener(processor, listening_address, receive_timeout=1000, queue_s
     return zmq_listener
 
 
-class ExternalProcessWrapper(object):
+class ExternalProcessWrapper(RestInterfacedProcess):
     """
     Wrap the processing function to allow for inter process communication.
     """
 
-    def __init__(self, process_function, initial_parameters):
+    def __init__(self, process_function, initial_parameters, processor_instance=None):
         """
         Constructor.
         :param process_function: Function to start in a new process.
         :param initial_parameters: Parameters to pass to the function at instantiation.
         """
         self.process_function = process_function
+        self.processor_instance = processor_instance
         self.process = None
 
         self.manager = multiprocessing.Manager()
@@ -120,6 +122,11 @@ class ExternalProcessWrapper(object):
         self.statistics = BasicStatistics(self.statistics_namespace)
 
         self.current_parameters = initial_parameters or {}
+
+        # Pre-process static attributes.
+        self._process_name = getattr(self.processor_instance, "__name__",
+                                     self.processor_instance.__class__.__name__) \
+            if self.processor_instance else "Unknown processor"
 
     def is_running(self):
         """
@@ -178,6 +185,26 @@ class ExternalProcessWrapper(object):
     def _set_current_parameters(self):
         for parameter in self.current_parameters.items():
             self.set_parameter(parameter)
+
+    def get_process_name(self):
+        return self._process_name
+
+    def get_process_help(self):
+        return RestInterfacedProcess.get_process_help(self.processor_instance)
+
+    def get_parameters(self):
+        # Collect default mflow_processor parameters and update them with the user set.
+        all_parameters = RestInterfacedProcess.get_parameters(self.processor_instance) \
+            if self.processor_instance else {}
+        all_parameters.update(self.current_parameters)
+
+        return all_parameters
+
+    def get_statistics(self):
+        self.statistics.get_statistics()
+
+    def get_statistics_raw(self):
+        self.statistics.get_statistics_raw()
 
 
 class BasicStatistics(object):

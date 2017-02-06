@@ -1,7 +1,7 @@
 import logging
 import sys
 from argparse import ArgumentParser
-from mflow_node.stream_node import start_node
+from mflow_node.stream_node import start_stream_node
 from mflow_processor.lz4_compressor import LZ4CompressionProcessor
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
@@ -16,7 +16,7 @@ parser.add_argument("--rest_port", type=int, default=8080, help="Port for web in
 parser.add_argument("--block_size", type=int, default=2048, help="LZ4 block size.")
 input_args = parser.parse_args()
 
-start_node(processor=LZ4CompressionProcessor(),
-           processor_parameters={"forwarding_address": input_args.forwarding_address},
-           listening_address=input_args.listening_address,
-           control_port=input_args.rest_port)
+start_stream_node(processor=LZ4CompressionProcessor(),
+                  processor_parameters={"forwarding_address": input_args.forwarding_address},
+                  listening_address=input_args.listening_address,
+                  control_port=input_args.rest_port)

@@ -11,10 +11,12 @@ requirements:
     run:
         - python
         - mflow >=0.0.15
+        - bitshuffle
         - bottle
         - h5py
         - numpy
-        - bitshuffle
+        - requests
+
 
 about:
     summary: "Mflow nodes and their processors."

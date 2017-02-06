@@ -2,6 +2,8 @@ from logging import getLogger
 from mflow_node.processor import StreamProcessor
 import h5py
 
+from mflow_processor.utils.h5_utils import populate_h5_file, create_dataset, compact_dataset, expand_dataset
+
 
 class HDF5ChunkedWriterProcessor(StreamProcessor):
     """
@@ -32,20 +34,22 @@ class HDF5ChunkedWriterProcessor(StreamProcessor):
 
         self._file = None
         self._dataset = None
-
         self._max_frame_index = 0
-        self.h5_dataset_attributes = {}
+        self._current_frame_chunk = None
+
+        # H5 attributes to add to the file.
         self.h5_group_attributes = {}
+        self.h5_dataset_attributes = {}
+        self.h5_datasets = {}
 
         # Parameters to be set.
         self.dataset_name = None
         self.output_file = None
+        self.frames_per_file = None
         self.frame_size = None
         self.dtype = None
 
         # Parameters with default values
-        self.dataset_initial_frame_count = 1
-        self.dataset_frames_increase_step = 1000
         self.compression = None
         self.compression_opts = None
 
@@ -54,9 +58,6 @@ class HDF5ChunkedWriterProcessor(StreamProcessor):
 
         if not self.dataset_name:
             error_message += "Parameter 'dataset_name' not set.\n"
-
-        if not self.output_file:
-            error_message += "Parameter 'output_file' not set.\n"
 
         if not self.frame_size:
             error_message += "Parameter 'frame_shape' not set.\n"
@@ -70,6 +71,9 @@ class HDF5ChunkedWriterProcessor(StreamProcessor):
         if self.dataset_frames_increase_step < 1:
             error_message += "Invalid values for parameter 'dataset_frames_increase_step'. Must be more than 0.\n"
 
+        if not self.output_file:
+            error_message += "Parameter 'output_file' not set.\n"
+
         if error_message:
             self._logger.error(error_message)
             raise ValueError(error_message)
@@ -78,33 +82,45 @@ class HDF5ChunkedWriterProcessor(StreamProcessor):
         self._logger.debug("Writer started.")
         # Check if all the needed input parameters are available.
         self._validate_parameters()
-        self._logger.debug("Starting mflow_processor. Writing to file '%s' chunks of size %s." % (self.output_file,
-                                                                                            self.frame_size))
+        self._logger.debug("Starting mflow_processor. Writing frames of size %s." % self.frame_size)
+
+    def _create_file(self, frame_chunk=0):
+        if self._file:
+            self._close_file()
+
+        filename = self.output_file.format(chunk_number=frame_chunk)
+        self._logger.debug("Writing to file '%s' chunks of size %s." % (filename, self.frame_size))
+
         # Truncate file if it already exists.
-        self._file = h5py.File(self.output_file, "w")
+        self._file = h5py.File(filename, "w")
 
-        # Generate the dataset groups if needed.
-        self.dataset_name = self.dataset_name.rstrip("/")
-        dataset_group = "/".join(self.dataset_name.split("/")[:-1])
+        # Construct the dataset.
+        self._dataset = create_dataset(self._file,
+                                       self.dataset_name,
+                                       self.frame_size,
+                                       self.dtype,
+                                       self.compression,
+                                       self.compression_opts)
 
-        if dataset_group and dataset_group not in self._file:
-            self._file.create_group(dataset_group)
+    def _close_file(self):
+        compact_dataset(self._dataset, self._max_frame_index)
 
-        self._dataset = self._file.create_dataset(name=self.dataset_name,
-                                                  shape=[self.dataset_initial_frame_count] + self.frame_size,
-                                                  maxshape=[None] + self.frame_size,
-                                                  chunks=tuple([1] + self.frame_size),
-                                                  dtype=self.dtype,
-                                                  compression=self.compression,
-                                                  compression_opts=tuple(self.compression_opts))
+        # Do not display the index number, but the the frame number (starts with 1)
+        if self.frames_per_file:
+            min_frame_in_dataset = self._current_frame_chunk * self.frames_per_file
+            max_frame_in_dataset = self._max_frame_index + min_frame_in_dataset
+        else:
+            max_frame_in_dataset = self._max_frame_index + 1
+            min_frame_in_dataset = 1
 
-    def _resize_dataset(self, received_frame_index):
-        new_dataset_size = received_frame_index + self.dataset_frames_increase_step
+        self._dataset.attrs["image_nr_high"] = max_frame_in_dataset
+        self._dataset.attrs["image_nr_low"] = min_frame_in_dataset
 
-        self._logger.debug("Current dataset is to small (size=%d) for frame index '%d'. Resizing it to %d."
-                           % (self._dataset.shape[0], received_frame_index, new_dataset_size))
+        populate_h5_file(self._file, self.h5_group_attributes, self.h5_datasets, self.h5_dataset_attributes)
 
-        self._dataset.resize(size=new_dataset_size, axis=0)
+        self._file.close()
+        self._file = None
+        self._max_frame_index = 0
 
     def process_message(self, message):
         frame_header = message.data["header"]
@@ -113,12 +129,21 @@ class HDF5ChunkedWriterProcessor(StreamProcessor):
 
         self._logger.debug("Received frame '%d'." % frame_header["frame"])
 
+        # If the image does not belong to the current chunk, close the file and create a new one.
+        if self.frames_per_file:
+            frame_chunk = (frame_index // self.frames_per_file) + 1
+            if not self._current_frame_chunk == frame_chunk:
+                self._current_frame_chunk = frame_chunk
+                self._create_file(frame_chunk)
+
+            frame_index -= (frame_chunk - 1) * self.frames_per_file
+
         # If the current frame does not fit in the dataset, expand it.
         if not frame_index < self._dataset.shape[0]:
-            self._resize_dataset(frame_index)
+            expand_dataset(self._dataset, frame_index)
 
         bytes_to_write = frame_data if isinstance(frame_data, bytes) else frame_data.tobytes()
-        self._dataset.id.write_direct_chunk((frame_header["frame"], 0, 0), bytes_to_write)
+        self._dataset.id.write_direct_chunk((frame_index, 0, 0), bytes_to_write)
 
         # Keep track of the max frame index to shrink the dataset before closing it.
         self._max_frame_index = max(self._max_frame_index, frame_index)
@@ -127,18 +152,4 @@ class HDF5ChunkedWriterProcessor(StreamProcessor):
 
     def stop(self):
         self._logger.debug("Writer stopped.")
-
-        # Compact the dataset before closing it.
-        min_dataset_size = self._max_frame_index + 1
-        self._logger.debug("Compacting dataset to size=%d." % min_dataset_size)
-        self._dataset.resize(size=min_dataset_size, axis=0)
-
-        # TODO: Figure out how to properly write dataset, groups, and file attributes.
-        # # Set dataset attributes.
-        # if self.h5_attributes:
-        #     attribute_group =
-        #     for name, value in self.h5_metadata.items():
-        #         self._logger.debug("Set dataset attribute: '%s':'%s'." % (name, value))
-        #         self._dataset.attrs[name] = value
-
-        self._file.close()
+        self._close_file()
