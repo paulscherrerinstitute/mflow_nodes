@@ -1,6 +1,7 @@
 import h5py
 from logging import getLogger
 from mflow_node.processor import StreamProcessor
+
 from mflow_processor.utils.h5_utils import populate_h5_file, create_dataset, compact_dataset, expand_dataset, \
     set_dataset_attributes
 
@@ -102,20 +103,21 @@ class HDF5ChunkedWriterProcessor(StreamProcessor):
                                        self.compression,
                                        self.compression_opts)
 
+        self._current_frame_chunk = frame_chunk
+
     def _set_data_chunk_attributes(self):
         """
         Insert the lowest and highest frame index attribute to the frame dataset.
         """
-        # Do not display the index number, but the the frame number (starts with 1)
         if self.frames_per_file:
-            min_frame_in_dataset = self._current_frame_chunk * self.frames_per_file
-            max_frame_in_dataset = self._max_frame_index + min_frame_in_dataset
+            min_frame_in_dataset = (self._current_frame_chunk - 1) * self.frames_per_file
         else:
-            max_frame_in_dataset = self._max_frame_index + 1
-            min_frame_in_dataset = 1
+            min_frame_in_dataset = 0
+        max_frame_in_dataset = self._max_frame_index + min_frame_in_dataset
 
-        set_dataset_attributes({"%s:%s" % (self.dataset_name, "image_nr_low"): min_frame_in_dataset,
-                                "%s:%s" % (self.dataset_name, "image_nr_high"): max_frame_in_dataset})
+        # Do not display the index number, but the the frame number (starts with 1)
+        set_dataset_attributes(self._file, {"%s:%s" % (self.dataset_name, "image_nr_low"): min_frame_in_dataset + 1,
+                                            "%s:%s" % (self.dataset_name, "image_nr_high"): max_frame_in_dataset + 1})
 
     def _close_file(self):
         """
@@ -132,21 +134,19 @@ class HDF5ChunkedWriterProcessor(StreamProcessor):
         self._current_frame_chunk = None
         self._max_frame_index = 0
 
-    def _prepare_storage_for_frame(self, frame_header):
+    def _prepare_storage_for_frame(self, frame_index, frame_size, dtype):
         """
         Takes care of preparing the correct storage destination for the provided frame index.
-        :param frame_header: Info about the received frame.
+        :param frame_index: Index of the received frame.
+        :param frame_size: Size of the frame.
+        :param dtype: Frame data type.
         :return: Relative frame index to be used inside the prepared dataset.
         """
-        frame_index = frame_header["frame"]
-        frame_size = frame_header["shape"]
-        dtype = frame_header["type"]
 
         # If the image does not belong to the current file chunk, close the file and create a new one.
         if self.frames_per_file:
             frame_chunk = (frame_index // self.frames_per_file) + 1
             if not self._current_frame_chunk == frame_chunk:
-                self._current_frame_chunk = frame_chunk
                 self._create_file(frame_size, dtype, frame_chunk)
 
             frame_index -= (frame_chunk - 1) * self.frames_per_file
@@ -164,14 +164,16 @@ class HDF5ChunkedWriterProcessor(StreamProcessor):
         return frame_index
 
     def process_message(self, message):
-        frame_header = message.data["header"]
-        frame_data = message.data["data"][0]
-        frame_index = self._prepare_storage_for_frame(frame_header)
+        relative_frame_index = self._prepare_storage_for_frame(message.get_frame_index(),
+                                                               message.get_frame_size(),
+                                                               message.get_frame_dtype())
 
-        self._logger.debug("Received frame '%d'." % frame_header["frame"])
+        self._logger.debug("Received frame '%d', writing as relative frame '%d'." % (message.get_frame_index(),
+                                                                                     relative_frame_index))
 
+        frame_data = message.get_data()
         bytes_to_write = frame_data if isinstance(frame_data, bytes) else frame_data.tobytes()
-        self._dataset.id.write_direct_chunk((frame_index, 0, 0), bytes_to_write)
+        self._dataset.id.write_direct_chunk((relative_frame_index, 0, 0), bytes_to_write)
 
         self._file.flush()
 
