@@ -3,8 +3,8 @@ from logging import getLogger
 
 import h5py
 
-DATASET_INITIAL_FRAME_COUNT = 1
-DATASET_FRAMES_INCREASE_STEP = 1000
+DATASET_INITIAL_FRAME_COUNT = 100
+DATASET_FRAMES_INCREASE_STEP = 100
 
 _logger = getLogger(__name__)
 
@@ -55,7 +55,7 @@ def set_dataset_attributes(file, dataset_attributes):
             dataset = file[dataset_name]
             dataset.attrs[attribute_name] = value
         else:
-            raise ValueError("Dataset '%s' does not exist." % dataset_names)
+            raise ValueError("Dataset '%s' does not exist." % name)
 
 
 def create_external_data_files_links(file, external_files):
