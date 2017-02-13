@@ -45,8 +45,6 @@ class HDF5ChunkedWriterProcessor(StreamProcessor):
 
         # Parameters that need to be set.
         self.dataset_name = None
-        self.frame_size = None
-        self.dtype = None
         self.output_file = None
 
         # Parameters with default values.
@@ -69,12 +67,6 @@ class HDF5ChunkedWriterProcessor(StreamProcessor):
         if not self.dataset_name:
             error_message += "Parameter 'dataset_name' not set.\n"
 
-        if not self.frame_size:
-            error_message += "Parameter 'frame_size' not set.\n"
-
-        if not self.dtype:
-            error_message += "Parameter 'dtype' not set.\n"
-
         if not self.output_file:
             error_message += "Parameter 'output_file' not set.\n"
 
@@ -86,9 +78,9 @@ class HDF5ChunkedWriterProcessor(StreamProcessor):
         self._logger.debug("Writer started.")
         # Check if all the needed input parameters are available.
         self._validate_parameters()
-        self._logger.debug("Starting mflow_processor. Writing frames of size %s." % self.frame_size)
+        self._logger.debug("Starting mflow_processor.")
 
-    def _create_file(self, frame_chunk=0):
+    def _create_file(self, frame_size, dtype, frame_chunk=0):
         """
         Create a new H5 file for the provided frame_chunk.
         :param frame_chunk: The number of the data file to write to.
@@ -97,7 +89,7 @@ class HDF5ChunkedWriterProcessor(StreamProcessor):
             self._close_file()
 
         filename = self.output_file.format(chunk_number=frame_chunk)
-        self._logger.debug("Writing to file '%s' chunks of size %s." % (filename, self.frame_size))
+        self._logger.debug("Writing to file '%s' chunks of size %s." % (filename, frame_size))
 
         # Truncate file if it already exists.
         self._file = h5py.File(filename, "w")
@@ -105,8 +97,8 @@ class HDF5ChunkedWriterProcessor(StreamProcessor):
         # Construct the dataset.
         self._dataset = create_dataset(self._file,
                                        self.dataset_name,
-                                       self.frame_size,
-                                       self.dtype,
+                                       frame_size,
+                                       dtype,
                                        self.compression,
                                        self.compression_opts)
 
@@ -137,22 +129,30 @@ class HDF5ChunkedWriterProcessor(StreamProcessor):
 
         self._file.close()
         self._file = None
+        self._current_frame_chunk = None
         self._max_frame_index = 0
 
-    def _prepare_storage_for_frame(self, frame_index):
+    def _prepare_storage_for_frame(self, frame_header):
         """
         Takes care of preparing the correct storage destination for the provided frame index.
-        :param frame_index: Frame about to be stored.
+        :param frame_header: Info about the received frame.
         :return: Relative frame index to be used inside the prepared dataset.
         """
+        frame_index = frame_header["frame"]
+        frame_size = frame_header["shape"]
+        dtype = frame_header["type"]
+
         # If the image does not belong to the current file chunk, close the file and create a new one.
         if self.frames_per_file:
             frame_chunk = (frame_index // self.frames_per_file) + 1
             if not self._current_frame_chunk == frame_chunk:
                 self._current_frame_chunk = frame_chunk
-                self._create_file(frame_chunk)
+                self._create_file(frame_size, dtype, frame_chunk)
 
             frame_index -= (frame_chunk - 1) * self.frames_per_file
+        # The file is not open yet.
+        elif not self._file:
+            self._create_file(frame_size, dtype)
 
         # If the current frame does not fit in the dataset, expand it.
         if not frame_index < self._dataset.shape[0]:
@@ -166,7 +166,7 @@ class HDF5ChunkedWriterProcessor(StreamProcessor):
     def process_message(self, message):
         frame_header = message.data["header"]
         frame_data = message.data["data"][0]
-        frame_index = self._prepare_storage_for_frame(frame_header["frame"])
+        frame_index = self._prepare_storage_for_frame(frame_header)
 
         self._logger.debug("Received frame '%d'." % frame_header["frame"])
 
