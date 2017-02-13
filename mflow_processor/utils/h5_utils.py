@@ -54,9 +54,11 @@ def set_dataset_attributes(file, dataset_attributes):
         if dataset_name in file:
             dataset = file[dataset_name]
             dataset.attrs[attribute_name] = value
+        else:
+            raise ValueError("Dataset '%s' does not exist." % dataset_names)
 
 
-def create_data_files_links(file, external_files):
+def create_external_data_files_links(file, external_files):
     for file_path in external_files:
         filename = os.path.basename(file_path)
         link_name = "/entry/data/" + filename[filename.index("_data_") + 1:filename.rindex(".h5")]

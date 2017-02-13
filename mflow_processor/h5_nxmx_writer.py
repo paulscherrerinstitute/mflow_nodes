@@ -5,7 +5,7 @@ import h5py
 import requests
 from urllib.parse import urljoin
 
-from mflow_processor.utils.h5_utils import create_data_files_links, populate_h5_file
+from mflow_processor.utils.h5_utils import create_external_data_files_links, populate_h5_file
 from mflow_rest_api.rest_interface import RestInterfacedProcess
 
 MASTER_FILENAME_SUFFIX = "_master.h5"
@@ -118,7 +118,7 @@ class HDF5nxmxWriter(RestInterfacedProcess):
 
         # Link the generated output files.
         files_to_link = glob.glob("%s*.h5" % self._data_filename_format[0:self._data_filename_format.rindex("%")])
-        create_data_files_links(self._file, files_to_link)
+        create_external_data_files_links(self._file, files_to_link)
 
         populate_h5_file(self._file, self.h5_group_attributes, self.h5_datasets, self.h5_dataset_attributes)
 

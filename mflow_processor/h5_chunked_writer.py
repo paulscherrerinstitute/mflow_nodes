@@ -1,8 +1,8 @@
+import h5py
 from logging import getLogger
 from mflow_node.processor import StreamProcessor
-import h5py
-
-from mflow_processor.utils.h5_utils import populate_h5_file, create_dataset, compact_dataset, expand_dataset
+from mflow_processor.utils.h5_utils import populate_h5_file, create_dataset, compact_dataset, expand_dataset, \
+    set_dataset_attributes
 
 
 class HDF5ChunkedWriterProcessor(StreamProcessor):
@@ -16,20 +16,26 @@ class HDF5ChunkedWriterProcessor(StreamProcessor):
         stop                           Stop the writer, compact the dataset and close the file.
 
     Writer parameters:
-        compression                    Filter number to be used. None for no compression.
-        compression_opts               Options to pass to the compression filter. None is defautl.
-        dataset_frames_increase_step   When dataset is full, increase its capacity for the step value.
-        dataset_initial_frame_count    Number of pre-allocated frames in the dataset.
+
         dataset_name                   Name of the dataset to write the data inside the H5 file.
-        dtype                          Data type of the stream.
         frame_size                     Size of a single frame in pixels.
-        h5_attributes                  Attributes to add to the H5 file.
-        h5_datasets                    Datasets to add to the H5 file.
+        dtype                          Data type of the stream.
         output_file                    Location to write the H5 file to.
+
+        compression                    Filter number to be used. None for no compression. None is default.
+        compression_opts               Options to pass to the compression filter. None is default.
+
+        h5_group_attributes            Attributes to add to the H5 file groups.
+        h5_dataset_attributes          Attributes to add the the H5 datasets.
+        h5_datasets                    Datasets to add to the H5 file.
     """
     _logger = getLogger(__name__)
 
     def __init__(self, name="H5 chunked writer"):
+        """
+        Initialize the chunked writer.
+        :param name: Name of the writer.
+        """
         self.__name__ = name
 
         self._file = None
@@ -37,39 +43,37 @@ class HDF5ChunkedWriterProcessor(StreamProcessor):
         self._max_frame_index = 0
         self._current_frame_chunk = None
 
-        # H5 attributes to add to the file.
+        # Parameters that need to be set.
+        self.dataset_name = None
+        self.frame_size = None
+        self.dtype = None
+        self.output_file = None
+
+        # Parameters with default values.
+        self.frames_per_file = None
+        self.compression = None
+        self.compression_opts = None
+
+        # Additional H5 datasets and attributes.
         self.h5_group_attributes = {}
         self.h5_dataset_attributes = {}
         self.h5_datasets = {}
 
-        # Parameters to be set.
-        self.dataset_name = None
-        self.output_file = None
-        self.frames_per_file = None
-        self.frame_size = None
-        self.dtype = None
-
-        # Parameters with default values
-        self.compression = None
-        self.compression_opts = None
-
     def _validate_parameters(self):
+        """
+        Check if all the needed parameters are set.
+        :return: ValueError if any parameter is missing.
+        """
         error_message = ""
 
         if not self.dataset_name:
             error_message += "Parameter 'dataset_name' not set.\n"
 
         if not self.frame_size:
-            error_message += "Parameter 'frame_shape' not set.\n"
+            error_message += "Parameter 'frame_size' not set.\n"
 
         if not self.dtype:
             error_message += "Parameter 'dtype' not set.\n"
-
-        if self.dataset_initial_frame_count < 1:
-            error_message += "Invalid values for parameter 'expected_frames_in_dataset'. Must be more than 0.\n"
-
-        if self.dataset_frames_increase_step < 1:
-            error_message += "Invalid values for parameter 'dataset_frames_increase_step'. Must be more than 0.\n"
 
         if not self.output_file:
             error_message += "Parameter 'output_file' not set.\n"
@@ -85,6 +89,10 @@ class HDF5ChunkedWriterProcessor(StreamProcessor):
         self._logger.debug("Starting mflow_processor. Writing frames of size %s." % self.frame_size)
 
     def _create_file(self, frame_chunk=0):
+        """
+        Create a new H5 file for the provided frame_chunk.
+        :param frame_chunk: The number of the data file to write to.
+        """
         if self._file:
             self._close_file()
 
@@ -102,9 +110,10 @@ class HDF5ChunkedWriterProcessor(StreamProcessor):
                                        self.compression,
                                        self.compression_opts)
 
-    def _close_file(self):
-        compact_dataset(self._dataset, self._max_frame_index)
-
+    def _set_data_chunk_attributes(self):
+        """
+        Insert the lowest and highest frame index attribute to the frame dataset.
+        """
         # Do not display the index number, but the the frame number (starts with 1)
         if self.frames_per_file:
             min_frame_in_dataset = self._current_frame_chunk * self.frames_per_file
@@ -113,23 +122,30 @@ class HDF5ChunkedWriterProcessor(StreamProcessor):
             max_frame_in_dataset = self._max_frame_index + 1
             min_frame_in_dataset = 1
 
-        self._dataset.attrs["image_nr_high"] = max_frame_in_dataset
-        self._dataset.attrs["image_nr_low"] = min_frame_in_dataset
+        set_dataset_attributes({"%s:%s" % (self.dataset_name, "image_nr_low"): min_frame_in_dataset,
+                                "%s:%s" % (self.dataset_name, "image_nr_high"): max_frame_in_dataset})
 
+    def _close_file(self):
+        """
+        Close the current file. Compact the dataset and write the needed metadata to the H5 file.s
+        """
+        compact_dataset(self._dataset, self._max_frame_index)
+        # Set the minimum and the maximum frame in the current dataset.
+        self._set_data_chunk_attributes()
+        # Additional datasets and group and dataset attributes.
         populate_h5_file(self._file, self.h5_group_attributes, self.h5_datasets, self.h5_dataset_attributes)
 
         self._file.close()
         self._file = None
         self._max_frame_index = 0
 
-    def process_message(self, message):
-        frame_header = message.data["header"]
-        frame_data = message.data["data"][0]
-        frame_index = frame_header["frame"]
-
-        self._logger.debug("Received frame '%d'." % frame_header["frame"])
-
-        # If the image does not belong to the current chunk, close the file and create a new one.
+    def _prepare_storage_for_frame(self, frame_index):
+        """
+        Takes care of preparing the correct storage destination for the provided frame index.
+        :param frame_index: Frame about to be stored.
+        :return: Relative frame index to be used inside the prepared dataset.
+        """
+        # If the image does not belong to the current file chunk, close the file and create a new one.
         if self.frames_per_file:
             frame_chunk = (frame_index // self.frames_per_file) + 1
             if not self._current_frame_chunk == frame_chunk:
@@ -142,11 +158,20 @@ class HDF5ChunkedWriterProcessor(StreamProcessor):
         if not frame_index < self._dataset.shape[0]:
             expand_dataset(self._dataset, frame_index)
 
-        bytes_to_write = frame_data if isinstance(frame_data, bytes) else frame_data.tobytes()
-        self._dataset.id.write_direct_chunk((frame_index, 0, 0), bytes_to_write)
-
         # Keep track of the max frame index to shrink the dataset before closing it.
         self._max_frame_index = max(self._max_frame_index, frame_index)
+
+        return frame_index
+
+    def process_message(self, message):
+        frame_header = message.data["header"]
+        frame_data = message.data["data"][0]
+        frame_index = self._prepare_storage_for_frame(frame_header["frame"])
+
+        self._logger.debug("Received frame '%d'." % frame_header["frame"])
+
+        bytes_to_write = frame_data if isinstance(frame_data, bytes) else frame_data.tobytes()
+        self._dataset.id.write_direct_chunk((frame_index, 0, 0), bytes_to_write)
 
         self._file.flush()
 

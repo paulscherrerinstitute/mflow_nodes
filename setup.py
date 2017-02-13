@@ -8,6 +8,13 @@ setup(
     author='Paul Scherrer Institute',
     author_email='andrej.babic@psi.ch',
     requires=["bottle", "mflow", "h5py", "numpy", "bitshuffle", 'requests'],
-    scripts=['scripts/write_node.py', 'scripts/proxy_node.py', "scripts/compression_node.py"],
-    packages=['mflow_node', 'mflow_processor', 'mflow_rest_api']
+
+    scripts=['scripts/write_node.py',
+             'scripts/proxy_node.py',
+             "scripts/compression_node.py",
+             "scripts/compression_node.py"],
+
+    packages=['mflow_node',
+              'mflow_processor',
+              'mflow_rest_api']
 )
