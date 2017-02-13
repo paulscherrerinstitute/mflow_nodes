@@ -27,5 +27,4 @@ start_stream_node(processor=ProxyProcessor(proxy_function=print_function),
                   processor_parameters={"forwarding_address": input_args.forwarding_address},
                   listening_address=input_args.listening_address,
                   control_port=input_args.rest_port,
-                  receive_raw=True
-                  )
+                  receive_raw=False)
