@@ -5,6 +5,7 @@ from logging import getLogger
 
 from mflow import mflow
 
+from mflow_node.utils.stream_message import get_message
 from mflow_rest_api.rest_interface import start_web_interface, RestInterfacedProcess
 
 _logger = getLogger(__name__)
@@ -76,7 +77,7 @@ def get_zmq_listener(processor, listening_address, receive_timeout=1000, queue_s
         receive_function = stream.receive_raw if receive_raw else stream.receive
 
         while not stop_event.is_set():
-            message = receive_function()
+            message = get_message(receive_function())
 
             # Process only valid messages.
             if message:
@@ -214,9 +215,9 @@ class BasicStatistics(object):
         self._shared_namespace.BasicStatistics = []
 
     def save_statistics(self, time_delta, message):
-        self._shared_namespace.BasicStatistics = [{"message_length": len(message.data["data"][0]),
+        self._shared_namespace.BasicStatistics = [{"message_length": message.get_data_length(),
                                                    "processing_time": time_delta,
-                                                   "frame": message.data["header"]["frame"]}] \
+                                                   "frame": message.get_frame_index()}] \
                                                  + self._shared_namespace.BasicStatistics[:self._buffer_length - 1]
 
     def get_statistics_raw(self):

@@ -49,17 +49,12 @@ class ProxyProcessor(StreamProcessor):
         self._zmq_forwarder.start(self.forwarding_address)
 
     def process_message(self, message):
-        frame_header = message.data["header"]
-        frame_data = message.data["data"][0]
+        self._logger.debug("Received frame '%d'. Passing to proxy function." % message.get_frame_index())
+        forward_message = self._proxy_function(message)
 
-        self._logger.debug("Received frame '%d'. Passing to proxy function." % frame_header["frame"])
-        proxy_result = self._proxy_function(frame_header, frame_data)
         # If the proxy function returned data, forward this.
-        if proxy_result:
-            frame_header = proxy_result[0]
-            frame_data = proxy_result[1]
-
-        self._zmq_forwarder.send(frame_header, frame_data)
+        if forward_message:
+            self._zmq_forwarder.send(message)
 
     def stop(self):
         self._zmq_forwarder.stop()

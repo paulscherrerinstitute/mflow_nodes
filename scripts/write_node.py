@@ -25,5 +25,5 @@ start_stream_node(processor=HDF5ChunkedWriterProcessor(),
                   processor_parameters=parameters,
                   listening_address=input_args.listening_address,
                   control_port=input_args.rest_port,
-                  receive_raw=True,
+                  receive_raw=False,
                   start_listener=True)

@@ -93,7 +93,7 @@ class MFlowForwarder(object):
         self._logger.debug("Forwarding frame '%d'." % header["frame"])
         self.stream.send(json.dumps(header).encode(), send_more=True, block=True)
 
-        self.stream.send(data , block=True)
+        self.stream.send(data, block=True)
 
     def stop(self):
         """

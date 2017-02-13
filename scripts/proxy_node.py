@@ -16,10 +16,10 @@ parser.add_argument("--rest_port", type=int, default=8080, help="Port for web in
 input_args = parser.parse_args()
 
 
-def print_function(header, data):
-    print("============= Frame %i =============" % header["frame"])
-    print(header)
-    print(data)
+def print_function(message):
+    print("============= Frame %i =============" % message.get_frame_index())
+    print(message.get_header())
+    # print(message.get_data())
     print("====================================")
 
 
