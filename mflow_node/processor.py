@@ -83,17 +83,15 @@ class MFlowForwarder(object):
                                     receive_timeout=self.receive_timeout,
                                     queue_size=self.queue_size)
 
-    def send(self, header, data):
+    def forward(self, message):
         """
         Forward the provided data.
         :param header: Header to forward.
         :param data: Data to forward.
         :return: None.
         """
-        self._logger.debug("Forwarding frame '%d'." % header["frame"])
-        self.stream.send(json.dumps(header).encode(), send_more=True, block=True)
-
-        self.stream.send(data, block=True)
+        self._logger.debug("Forwarding message with header:\n%s" % message.data["header"])
+        self.stream.forward(message.data, block=True)
 
     def stop(self):
         """

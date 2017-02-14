@@ -61,8 +61,8 @@ class LZ4CompressionProcessor(ProxyProcessor):
         frame_header = message.data["header"]
         frame_data = message.data["data"][0]
 
-        self._logger.debug("Received frame '%d'." % frame_header["frame"])
+        self._logger.debug("Received frame '%d'." % message.get_frame_index())
         new_header, compressed_bytes = self._compress_lz4(frame_header, frame_data)
 
-        self._zmq_forwarder.stream.send(json.dumps(new_header).encode(), send_more=True, block=True)
-        self._zmq_forwarder.stream.send(compressed_bytes, block=True)
+        self._zmq_forwarder.stream.forward(json.dumps(new_header).encode(), send_more=True, block=True)
+        self._zmq_forwarder.stream.forward(compressed_bytes, block=True)

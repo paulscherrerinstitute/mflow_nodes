@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 import numpy as np
 
 from mflow_node.processor import MFlowForwarder
@@ -17,6 +19,9 @@ for frame_number in range(16):
     data = np.zeros(shape=(4, 4), dtype=np.int32) + frame_number
 
     print("Sending frame %d" % frame_number)
-    mflow_forwarder.send(header, data)
+
+    message = SimpleNamespace()
+    message.data = {"header": header, "data": [data]}
+    mflow_forwarder.forward(message)
 
 mflow_forwarder.stop()

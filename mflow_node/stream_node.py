@@ -5,15 +5,15 @@ from logging import getLogger
 
 from mflow import mflow
 
-from mflow_node.utils.stream_message import get_message
 from mflow_rest_api.rest_interface import start_web_interface, RestInterfacedProcess
+from mflow_tools.mflow_message import get_mflow_message
 
 _logger = getLogger(__name__)
 
 
 def start_stream_node(processor, processor_parameters=None, listening_address="tcp://127.0.0.1:40000",
                       control_host="0.0.0.0", control_port=8080,
-                      start_listener=True, receive_raw=False):
+                      start_listener=False, receive_raw=False):
     """
     Start the ZMQ processing node.
     :param processor: Stream mflow_processor that does the actual work on the stream data.
@@ -77,7 +77,7 @@ def get_zmq_listener(processor, listening_address, receive_timeout=1000, queue_s
         receive_function = stream.receive_raw if receive_raw else stream.receive
 
         while not stop_event.is_set():
-            message = get_message(receive_function())
+            message = get_mflow_message(receive_function())
 
             # Process only valid messages.
             if message:
@@ -202,10 +202,10 @@ class ExternalProcessWrapper(RestInterfacedProcess):
         return all_parameters
 
     def get_statistics(self):
-        self.statistics.get_statistics()
+        return self.statistics.get_statistics()
 
     def get_statistics_raw(self):
-        self.statistics.get_statistics_raw()
+        return self.statistics.get_statistics_raw()
 
 
 class BasicStatistics(object):
@@ -236,7 +236,10 @@ class BasicStatistics(object):
         frame_rate = total_number_frames / total_time
         bytes_rate = total_bytes / total_time
 
-        data = OrderedDict({"frame_per_second": frame_rate,
-                            "bytes_per_second": bytes_rate})
+        statistics = {"total_time_seconds": total_time,
+                      "total_frames": total_number_frames,
+                      "frame_per_second": frame_rate,
+                      "total_bytes": total_bytes,
+                      "bytes_per_second": bytes_rate}
 
-        return data
+        return OrderedDict(sorted(statistics.items()))
