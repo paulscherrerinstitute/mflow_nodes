@@ -6,7 +6,15 @@ NX_CLASS_ATTRIBUTE_NAME = "NX_class"
 
 
 class NXSchemaValidator(object):
+    """
+    Take a parsed mx definition and make it useful.
+    """
     def __init__(self, groups, datasets):
+        """
+        Instantiate the class.
+        :param groups: Required groups from definition.
+        :param datasets: Required datasets from definition.
+        """
         self.groups = groups
         self.datasets = datasets
 
@@ -16,6 +24,11 @@ class NXSchemaValidator(object):
                                       in self.datasets.items() if definition["required"])
 
     def validate_h5_file(self, file_handle):
+        """
+        Check if the H5 file is compatible with the provided definition.
+        :param file_handle: Handle to the file to verify.
+        :return: None if file is valid, ValueError if there are problems.
+        """
         errors = ""
 
         # Validate group requirements.
@@ -46,18 +59,6 @@ class NXSchemaValidator(object):
 
         if errors:
             raise ValueError(errors)
-
-    def create_required_groups(self, file_handle):
-        for group_name, definition in self.required_groups.items():
-            group = file_handle.require_group(group_name)
-            group.attrs[NX_CLASS_ATTRIBUTE_NAME] = definition["type"]
-
-    def get_required_group_attributes(self):
-
-        h5_group_attributes = OrderedDict(("%s:%s" % (path, NX_CLASS_ATTRIBUTE_NAME), definition["type"])
-                                          for path, definition in sorted(self.required_groups.items()))
-
-        return h5_group_attributes
 
 
 def parse_nx_definition(file_name):

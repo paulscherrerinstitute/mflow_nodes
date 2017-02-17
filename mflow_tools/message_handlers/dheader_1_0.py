@@ -1,4 +1,7 @@
 class MessageHandler(object):
+    """
+    Message handler for dheader-1.0
+    """
     @staticmethod
     def get_header(message):
         return message.data["header"]

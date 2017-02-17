@@ -12,9 +12,14 @@ setup(
     scripts=['scripts/write_node.py',
              'scripts/proxy_node.py',
              "scripts/compression_node.py",
-             "scripts/compression_node.py"],
+             "scripts/nxmx_node.py"],
 
     packages=['mflow_node',
               'mflow_processor',
-              'mflow_rest_api']
+              'mflow_processor.utils',
+              'mflow_rest_api',
+              'mflow_tools',
+              'mflow_tools.message_handlers'],
+
+    include_package_data=True
 )

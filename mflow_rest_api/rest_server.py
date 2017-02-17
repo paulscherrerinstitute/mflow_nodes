@@ -17,6 +17,7 @@ def start_web_interface(process, host, port):
     """
     app = Bottle()
     static_root_path = os.path.join(os.path.dirname(__file__), "static")
+    _logger.debug("Static files root folder: %s", static_root_path)
 
     @app.get("/")
     def index():
@@ -95,31 +96,69 @@ def start_web_interface(process, host, port):
 
 
 class RestInterfacedProcess(object):
+    """
+    Base class for all classes that interact with the Bottle instance.
+    """
     def get_process_name(self):
+        """
+        Return the process name.
+        :return: String representation of the name.
+        """
         return getattr(self, "__name__", self.__class__.__name__)
 
     def get_process_help(self):
+        """
+        Return the processor documentation.
+        :return:
+        """
         return self.__doc__ or "Sorry, no help available."
 
     def start(self):
+        """
+        Start the processor.
+        """
         pass
 
     def stop(self):
+        """
+        Stop the processor.
+        :return:
+        """
         pass
 
     def is_running(self):
+        """
+        Check if the process is running.
+        :return: True if the process is running, False otherwise.
+        """
         pass
 
     def get_parameters(self):
+        """
+        Get process parameters.
+        :return: Dictionary with all the parameters.
+        """
         return OrderedDict((key, value) for key, value
                            in sorted(vars(self).items())
                            if not key.startswith('_'))
 
     def set_parameter(self, parameter):
+        """
+        Set the parameters on the process.
+        :param parameter: Parameter to set, in (parameter_name, parameter_value) form.
+        """
         pass
 
     def get_statistics(self):
+        """
+        Get the processor statistics.
+        :return: Dictionary of relevant statistics.
+        """
         return self.get_statistics_raw()
 
     def get_statistics_raw(self):
+        """
+        Get the processor raw statistics data.
+        :return: List of statistics events.
+        """
         pass

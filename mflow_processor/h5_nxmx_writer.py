@@ -28,6 +28,12 @@ class HDF5nxmxWriter(StreamProcessor):
     _logger = getLogger(__name__)
 
     def __init__(self, h5_writer_stream_address, h5_writer_control_address, name="H5 NXMX master writer"):
+        """
+        Initialize the NXMX writer.
+        :param h5_writer_stream_address: H5 writer stream address to forward the stream to.
+        :param h5_writer_control_address: H5 writer control address to control the writer.
+        :param name: Name of the writer.
+        """
         self.__name__ = name
         self._file = None
         self._is_running = False
@@ -99,8 +105,17 @@ class HDF5nxmxWriter(StreamProcessor):
         self._file.close()
         self._is_running = False
 
+    def _process_header_attributes(self, header_data):
+        self._logger.debug("Processing header message attributes.")
+
     def process_message(self, message):
-        if message.htype.startswith("dimage"):
+        if message.htype.startswith("dimage-"):
             self._zmq_forwarder.forward(message.raw_message)
+        elif message.htype.startswith("dseries_end-"):
+            self._logger.debug("End series message received.")
+            self.stop()
+        elif message.htype.startswith("dheader-"):
+            self._logger.debug("Header message received.")
+            self._process_header_attributes(message.get_data())
         else:
             self._logger.debug("Skipping message of type '%s'." % message.htype)

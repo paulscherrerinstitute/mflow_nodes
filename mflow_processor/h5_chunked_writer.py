@@ -35,7 +35,7 @@ class HDF5ChunkedWriterProcessor(StreamProcessor):
     def __init__(self, name="H5 chunked writer"):
         """
         Initialize the chunked writer.
-        :param name: Name of the writer.
+            :param name: Name of the writer.
         """
         self.__name__ = name
 

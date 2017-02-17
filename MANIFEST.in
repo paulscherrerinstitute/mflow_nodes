@@ -1,0 +1,2 @@
+recursive-include mflow_processor/utils/schemas *
+recursive-include mflow_rest_api/static *

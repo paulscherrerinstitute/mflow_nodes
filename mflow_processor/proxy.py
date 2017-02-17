@@ -19,6 +19,11 @@ class ProxyProcessor(StreamProcessor):
     _logger = getLogger(__name__)
 
     def __init__(self, proxy_function, name="Proxy node"):
+        """
+        Initialize the proxy node.
+        :param proxy_function: Proxy function to be executed on message.
+        :param name: Name of the proxy.
+        """
         self._zmq_forwarder = None
         self._proxy_function = proxy_function
         self.__name__ = name

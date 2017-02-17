@@ -1,5 +1,5 @@
 from logging import getLogger
-from mflow import mflow, json
+from mflow import mflow
 
 
 class StreamProcessor(object):

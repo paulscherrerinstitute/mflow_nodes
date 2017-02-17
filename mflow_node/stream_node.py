@@ -5,7 +5,7 @@ from logging import getLogger
 
 from mflow import mflow
 
-from mflow_rest_api.rest_interface import start_web_interface, RestInterfacedProcess
+from mflow_rest_api.rest_server import start_web_interface, RestInterfacedProcess
 from mflow_tools.mflow_message import get_mflow_message
 
 _logger = getLogger(__name__)
@@ -209,21 +209,42 @@ class ExternalProcessWrapper(RestInterfacedProcess):
 
 
 class BasicStatistics(object):
+    """
+    Basic statistics implementation for mflow node.
+    """
     def __init__(self, shared_namespace, buffer_length=1000):
+        """
+        Initialize the class.
+        :param shared_namespace: Namespace to be shared with the external processor.
+        :param buffer_length: Statistis buffer length. Default 1000.
+        """
         self._shared_namespace = shared_namespace
         self._buffer_length = buffer_length
         self._shared_namespace.BasicStatistics = []
 
     def save_statistics(self, time_delta, message):
+        """
+        Add statistics point to the buffer.
+        :param time_delta: Time needed to process the message.
+        :param message: Message that was processed.
+        """
         self._shared_namespace.BasicStatistics = [{"message_length": message.get_data_length(),
                                                    "processing_time": time_delta,
                                                    "frame": message.get_frame_index()}] \
                                                  + self._shared_namespace.BasicStatistics[:self._buffer_length - 1]
 
     def get_statistics_raw(self):
+        """
+        Return the raw statistics data.
+        :return: List of statistic events.
+        """
         return self._shared_namespace.BasicStatistics[:self._buffer_length]
 
     def get_statistics(self):
+        """
+        Get the processed statistics. Aggregate them together and display averages.
+        Dictionary of statistic values.
+        """
         raw_data = self.get_statistics_raw()
         # Check if there is any statistics at all.
         if not raw_data:

@@ -4,7 +4,12 @@ import requests
 
 
 def set_parameters(base_url, parameters):
-    # Set parameters on h5 writer.
+    """
+    Set parameters on the node.
+    :param base_url: Base URL of the node.
+    :param parameters: Parameters to set.
+    :return: Response message.
+    """
     headers = {'content-type': 'application/json'}
     set_parameters_url = urljoin(base_url, "/parameters")
     response = requests.post(set_parameters_url,
@@ -18,6 +23,11 @@ def set_parameters(base_url, parameters):
 
 
 def start(base_url):
+    """
+    Start the node.
+    :param base_url: Base URL of the node.
+    :return: Response message.
+    """
     start_command_url = urljoin(base_url, "/start")
     response = requests.get(start_command_url).json()
     if response["status"] != "ok":
@@ -27,6 +37,11 @@ def start(base_url):
 
 
 def stop(base_url):
+    """
+    Stop the node.
+    :param base_url: Base URL of the node.
+    :return: Response message.
+    """
     stop_command_url = urljoin(base_url, "/stop")
     response = requests.get(stop_command_url).json()
     if response["status"] != "ok":
