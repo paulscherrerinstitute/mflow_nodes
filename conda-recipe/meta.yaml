@@ -17,6 +17,10 @@ requirements:
         - numpy
         - requests
 
+test:
+  source_files:
+    - tests/
+
 
 about:
     summary: "Mflow nodes and their processors."

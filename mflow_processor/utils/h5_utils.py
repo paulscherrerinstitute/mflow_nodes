@@ -132,3 +132,11 @@ def compact_dataset(dataset, max_frame_index):
     min_dataset_size = max_frame_index + 1
     _logger.debug("Compacting dataset to size=%d." % min_dataset_size)
     dataset.resize(size=min_dataset_size, axis=0)
+
+
+def convert_header_to_dataset_values(header, conversion_schema):
+    attributes = {}
+    for name, value in header.items():
+        attributes[conversion_schema[name]] = value
+
+    return attributes

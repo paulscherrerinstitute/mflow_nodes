@@ -139,3 +139,4 @@ ENV/
 
 # Ignore all temporary files
 temp_*
+ignore_*

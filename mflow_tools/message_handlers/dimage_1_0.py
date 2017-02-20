@@ -20,7 +20,8 @@ class MessageHandler(object):
 
     @staticmethod
     def get_frame_size(message):
-        return message.data["part_2"]["shape"]
+        # Reverse the list, (X, Y) is received, but (Y, X) is needed by the writer.
+        return message.data["part_2"]["shape"][::-1]
 
     @staticmethod
     def get_frame_dtype(message):

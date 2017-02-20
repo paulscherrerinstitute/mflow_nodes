@@ -21,8 +21,28 @@ parser.add_argument("--rest_port", type=int, default=41000, help="Port for web i
 input_args = parser.parse_args()
 
 # Read the processor parameters if provided.
-parameters = {"filename": "ignore_experiment_master.h5",
-              "frames_per_file": 9}
+parameters = {"filename": "~/tmp/ignore_experiment_master.h5",
+              "frames_per_file": 9,
+              "h5_datasets": {
+                  "/entry/instrument/detector/bit_depth_image": 16,
+
+                  "/entry/instrument/detector/detectorSpecific/compression": "bslz4",
+                  "/entry/instrument/detector/detectorSpecific/countrate_correction_count_cutoff": 24584,
+                  "/entry/instrument/detector/detectorSpecific/eiger_fw_version": "eiger-1.6.5-224.gitc9fbb9a.release",
+                  # "/entry/instrument/detector/detectorSpecific/flatfield": [9.999],
+                  "/entry/instrument/detector/detectorSpecific/module_bandwidth": 590,
+                  "/entry/instrument/detector/detectorSpecific/nsequences": 1,
+                  # "/entry/instrument/detector/detectorSpecific/pixel_mask": [9999],
+                  "/entry/instrument/detector/detectorSpecific/roi_mode": "disabled",
+                  "/entry/instrument/detector/detectorSpecific/test_mode": 0},
+
+              "calculated_angle_datasets": {
+                  "/entry/instrument/detector/goniometer/two_theta": [0.0, 0.1],
+                  "/entry/sample/goniometer/chi": [0.0, 0.1],
+                  "/entry/sample/goniometer/kappa": [0.0, 0.1],
+                  "/entry/sample/goniometer/omega": [0.0, 0.1],
+                  "/entry/sample/goniometer/phi": [0.0, 0.1]},
+              }
 
 if input_args.config_file:
     with open(input_args.config_file) as config_file:
