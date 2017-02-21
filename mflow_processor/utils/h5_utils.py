@@ -1,6 +1,6 @@
-import os
-import h5py
 from logging import getLogger
+
+import numpy as np
 
 # Initial size of the dataset (number of frames).
 DATASET_INITIAL_FRAME_COUNT = 100
@@ -10,17 +10,19 @@ DATASET_FRAMES_INCREASE_STEP = 100
 _logger = getLogger(__name__)
 
 
-def populate_h5_file(file, h5_group_attributes=None, h5_datasets=None, h5_dataset_attributes=None):
+def populate_h5_file(file, h5_group_attributes=None, h5_datasets=None,
+                     h5_dataset_attributes=None, dataset_dtypes=None):
     """
     Set all datasets and attributes on the provided H5 file.
     :param file: file to apply the changes to.
     :param h5_group_attributes: Group attributes.
     :param h5_datasets: Datasets values.
     :param h5_dataset_attributes: Dataset attributes.
+    :param dataset_dtypes: Mapping of datasets to desired dtypes.
     :return:
     """
     set_group_attributes(file, h5_group_attributes or {})
-    create_datasets_from_data(file, h5_datasets or {})
+    create_datasets_from_data(file, h5_datasets or {}, dataset_dtypes)
     set_dataset_attributes(file, h5_dataset_attributes or {})
 
 
@@ -55,14 +57,22 @@ def create_dataset(file, dataset_name, frame_size, dtype, compression=None, comp
     return dataset
 
 
-def create_datasets_from_data(file, datasets):
+def create_datasets_from_data(file, datasets, dataset_dtypes=None):
     """
     Create dataset from value.
     :param file: File to create a dataset on.
     :param datasets: Data to create the dataset from.
+    :param dataset_dtypes: Mapping of datasets to desired dtypes.
     """
     for name, value in datasets.items():
-        file.create_dataset(name, data=value)
+        if dataset_dtypes and name in dataset_dtypes:
+            dtype = dataset_dtypes[name]
+            if dtype == "S":
+                file.create_dataset(name, data=np.string_(value))
+            else:
+                file.create_dataset(name, data=value, dtype=dtype)
+        else:
+            file.create_dataset(name, data=value)
 
 
 def set_group_attributes(file, group_attributes):
@@ -75,7 +85,7 @@ def set_group_attributes(file, group_attributes):
         group_name, attribute_name = name.split(":")
 
         group = file.require_group(group_name)
-        group.attrs[attribute_name] = value
+        group.attrs[attribute_name] = np.string_(value)
 
 
 def set_dataset_attributes(file, dataset_attributes):
@@ -89,23 +99,13 @@ def set_dataset_attributes(file, dataset_attributes):
 
         if dataset_name in file:
             dataset = file[dataset_name]
+            # Strings should be of fixed length.
+            if isinstance(value, str):
+                value = np.string_(value)
+
             dataset.attrs[attribute_name] = value
         else:
             raise ValueError("Dataset '%s' does not exist." % name)
-
-
-def create_external_data_files_links(file, external_files):
-    """
-    Create links to external datasets (in external files).
-    WARNING: Specific to NXMX format!
-    :param file: File handle to create the external links on.
-    :param external_files: List of external files.
-    """
-    for file_path in external_files:
-        filename = os.path.basename(file_path)
-        link_name = "/entry/data/" + filename[filename.index("_data_") + 1:filename.rindex(".h5")]
-
-        file[link_name] = h5py.ExternalLink(filename, "entry/data/data")
 
 
 def expand_dataset(dataset, received_frame_index, increase_step=DATASET_FRAMES_INCREASE_STEP):
@@ -132,11 +132,3 @@ def compact_dataset(dataset, max_frame_index):
     min_dataset_size = max_frame_index + 1
     _logger.debug("Compacting dataset to size=%d." % min_dataset_size)
     dataset.resize(size=min_dataset_size, axis=0)
-
-
-def convert_header_to_dataset_values(header, conversion_schema):
-    attributes = {}
-    for name, value in header.items():
-        attributes[conversion_schema[name]] = value
-
-    return attributes

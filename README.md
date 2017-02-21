@@ -3,16 +3,35 @@ An mflow node is a standalone processes that receive, process, and maybe forward
 Every node has a Rest API and a simple web interface to control it. The node loads a processor (a class or function), 
 which is used to manipulate, analyze or save the mflow stream.
 
-## Setup
-You can install the library by running the setup script in the root folder of the project:
+## Conda production setup
+If you use conda in production, you can create a production ready environment using the 
+**conda-recipe/production\_env.txt** file.
 
+Before you can do that, you might need to add the **paulscherrerinstitute** channel to 
+your conda config:
+
+```bash
+conda config --add channels paulscherrerinstitute
 ```
+
+You can create you production environment by running
+
+```bash
+conda create --name <env_name> --file conda-recipe/production_env.txt
+```
+
+After that you can just source you newly created environment and start using the library.
+
+## Local build
+You can build the library by running the setup script in the root folder of the project:
+
+```bash
 python setup.py install
 ```
 
 or by using the conda also from the root folder of the project:
 
-```
+```bash
 conda build conda-recipe
 conda install --use-local mflow_nodes
 ```
@@ -20,11 +39,12 @@ conda install --use-local mflow_nodes
 ### Requirements
 The library relies on the following packages:
 
-- bottle
 - mflow
+- bitshuffle
+- bottle
 - h5py
 - numpy
-- bitshuffle
+- requests
 
 In case you are using conda to install the package, you might need to add the **paulscherrerinstitute** channel to 
 your conda config:
@@ -33,11 +53,12 @@ your conda config:
 conda config --add channels paulscherrerinstitute
 ```
 
-## Using the library
-There are already existing processors and the scripts to run them in this library. You can also write your 
-own processor, and run it as a mflow node.
+## Using existing nodes
+There are already existing processors and the scripts to run them in this library. All the 
+running scripts should be automatically added to your path, so you should be able to run 
+them from anywhere.
 
-### Existing nodes
+### Running nodes
 The scripts for running the existing nodes are located under the **scripts/** folder. To start a node, execute the 
 script with the required parameters (which parameters you need to provide depends on the node type).
 
@@ -46,23 +67,18 @@ The currently available nodes are:
 - **Proxy node** (proxy_node.py): Outputs the stream to the console and forwards it to the next node.
 - **Compression node** (compression_node.py): Compresses the stream using the bitshuffle LZ4 algorithm.
 - **Writer node** (writer_node.py): Writes the stream to a H5 file.
+- **NXMX node** (nxmx_node.py): Creates the master H5 file in the NXMX standard.
 
-The documentation for each node should be located at the end of this document (chapter **Nodes documentation**).
+The documentation for each node should be located at the end of this document (chapter **Nodes documentation**), but 
+some help if also available if you run the scripts with the '-h' parameter.
 
-### Developing new nodes
-...
-#### Processor
-...
-#### Running scripts
-...
-#### Processor documentation
-...
-## Controlling running nodes
+### Controlling running nodes
 Once a node has been started it can be monitored and its configuration changed via the web interface or the REST 
 api. Every node supports some basic operations:
 
 - **Start**: Starts the node.
 - **Stop**: Stops the node.
+- **Get parameters**: Return the currently set parameters.
 - **Update parameters**: Update the parameters in the node.
 
 What exactly each command means to a specific node depends on which processor is loaded in the node. For more details 
@@ -188,3 +204,12 @@ When you no longer need the nodes terminate them by pressing **CTRL+C** in each 
 ### Compression node
 
 ### Write node
+
+### Developing new nodes
+...
+#### Processor
+...
+#### Running scripts
+...
+#### Processor documentation
+...

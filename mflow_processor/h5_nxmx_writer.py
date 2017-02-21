@@ -1,19 +1,14 @@
 import glob
 import os
-import numpy as np
 from logging import getLogger
 
 import h5py
 
 from mflow_node.processor import StreamProcessor, MFlowForwarder
-from mflow_processor.utils.h5_utils import create_external_data_files_links, populate_h5_file, \
-    convert_header_to_dataset_values
+from mflow_processor.utils.h5_utils import populate_h5_file
 from mflow_rest_api import rest_client
-from mflow_tools.message_handlers.dheader_1_0 import header_to_h5_attributes_mapping
-
-MASTER_FILENAME_SUFFIX = "_master.h5"
-DATA_FILENAME_TEMPLATE = "{experiment_id}_data_{{chunk_number:06d}}.h5"
-NUMBER_OF_FRAMES_FROM_HEADER = "/entry/instrument/detector/detectorSpecific/nimages"
+from mflow_processor.utils.nxmx_utils import create_external_data_files_links, convert_header_to_dataset_values, NUMBER_OF_FRAMES_FROM_HEADER, \
+    MASTER_FILENAME_SUFFIX, DATA_FILENAME_TEMPLATE, dataset_types
 
 
 class HDF5nxmxWriter(StreamProcessor):
@@ -44,6 +39,7 @@ class HDF5nxmxWriter(StreamProcessor):
         self._data_filename_format = None
         self._zmq_forwarder = None
         self._image_count = 0
+        self._header_data = None
         self._h5_writer_stream_address = h5_writer_stream_address
         self._h5_writer_control_address = h5_writer_control_address
 
@@ -55,7 +51,6 @@ class HDF5nxmxWriter(StreamProcessor):
         self.h5_group_attributes = {}
         self.h5_datasets = {}
         self.h5_dataset_attributes = {}
-        self.calculated_angle_datasets = {}
 
     def _validate_parameters(self):
         error_message = ""
@@ -93,7 +88,6 @@ class HDF5nxmxWriter(StreamProcessor):
 
         # Create a master file.
         self._file = h5py.File(master_filename, "w")
-
         self._image_count = 0
         self._is_running = True
 
@@ -105,6 +99,14 @@ class HDF5nxmxWriter(StreamProcessor):
         files_to_link = glob.glob("%s*.h5" % self._data_filename_format[0:self._data_filename_format.rindex("{")])
         create_external_data_files_links(self._file, files_to_link)
 
+        # Process the received header data.
+        if not self._header_data:
+            raise ValueError("Did not receive header frame. Cannot write H5 file.")
+
+        self._logger.debug("Processing header message attributes.")
+        self.h5_datasets.update(convert_header_to_dataset_values(self._header_data,
+                                                                 self._image_count))
+
         # Check if the number of received frames is the same as the number of advertised frames.
         number_of_frames_from_header = self.h5_datasets[NUMBER_OF_FRAMES_FROM_HEADER]
         if self._image_count != number_of_frames_from_header:
@@ -112,31 +114,14 @@ class HDF5nxmxWriter(StreamProcessor):
                                  "frames. Fixing the header data." % (number_of_frames_from_header, self._image_count))
             self.h5_datasets[NUMBER_OF_FRAMES_FROM_HEADER] = self._image_count
 
-        # Set the calculated attributes.
-        for name, value in self.calculated_angle_datasets.items():
-            min_value = value[0]
-            step = value[1]
-            max_value = self._image_count * step
-            steps_array = np.arange(min_value, max_value, step)
-            # All the angle datasets have the same form.
-            self.h5_datasets[name + "_start"] = min_value
-            self.h5_datasets[name + "_range_total"] = max_value
-            self.h5_datasets[name + "_increment"] = step
-            self.h5_datasets[name + "_range_average"] = step
-            self.h5_datasets[name] = steps_array
-            self.h5_datasets[name + "_end"] = steps_array + step
-
         # Set the dataset and attributes in the h5 master file.
-        populate_h5_file(self._file, self.h5_group_attributes, self.h5_datasets, self.h5_dataset_attributes)
+        populate_h5_file(self._file, self.h5_group_attributes, self.h5_datasets,
+                         self.h5_dataset_attributes, dataset_types)
 
         self._zmq_forwarder.stop()
         self._file.close()
         self._is_running = False
-
-    def _process_header_attributes(self, header_data):
-        self._logger.debug("Processing header message attributes.")
-        self.h5_datasets.update(convert_header_to_dataset_values(header_data,
-                                                                 header_to_h5_attributes_mapping))
+        self._header_data = None
 
     def process_message(self, message):
         if message.htype.startswith("dimage-"):
@@ -146,6 +131,7 @@ class HDF5nxmxWriter(StreamProcessor):
             self._logger.debug("End series message received.")
         elif message.htype.startswith("dheader-"):
             self._logger.debug("Header message received.")
-            self._process_header_attributes(message.get_data())
+            # Store the header data for later processing.
+            self._header_data = message.get_data()
         else:
             self._logger.debug("Skipping message of type '%s'." % message.htype)

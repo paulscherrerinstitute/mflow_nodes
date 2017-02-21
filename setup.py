@@ -10,6 +10,7 @@ setup(
     requires=["bottle", "mflow", "h5py", "numpy", "bitshuffle", 'requests'],
 
     scripts=['scripts/write_node.py',
+             'scripts/write_jungfrau_node.py',
              'scripts/proxy_node.py',
              "scripts/compression_node.py",
              "scripts/nxmx_node.py"],

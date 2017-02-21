@@ -32,7 +32,7 @@ class HDF5ChunkedWriterProcessor(StreamProcessor):
     """
     _logger = getLogger(__name__)
 
-    def __init__(self, name="H5 chunked writer"):
+    def __init__(self, name="H5 chunked writer", plugins=None):
         """
         Initialize the chunked writer.
             :param name: Name of the writer.
@@ -43,6 +43,7 @@ class HDF5ChunkedWriterProcessor(StreamProcessor):
         self._dataset = None
         self._max_frame_index = 0
         self._current_frame_chunk = None
+        self._plugins = plugins or []
 
         # Parameters that need to be set.
         self.dataset_name = None
@@ -174,6 +175,10 @@ class HDF5ChunkedWriterProcessor(StreamProcessor):
         frame_data = message.get_data()
         bytes_to_write = frame_data if isinstance(frame_data, bytes) else frame_data.tobytes()
         self._dataset.id.write_direct_chunk((relative_frame_index, 0, 0), bytes_to_write)
+
+        # Process additional plugins on the message.
+        for plugin_function in self._plugins:
+            plugin_function(self, message)
 
         self._file.flush()
 
