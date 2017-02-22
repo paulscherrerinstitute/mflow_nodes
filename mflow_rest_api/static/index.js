@@ -18,8 +18,10 @@ var NotificationClient = (function(){
     return self;
 })();
 
-var APIClient = (function(){
+var APIClient = (function(instance_name){
     var self = {};
+    // This might fail behind a proxy. Instance name should be omitted here.
+    var url_base = "/api/v1/" + instance_name + "/";
 
     var verify_response = function(response, callback_function){
         if( response.status == "ok" ){
@@ -29,43 +31,43 @@ var APIClient = (function(){
         }
     };
 
-    var get_request = function(url){
+    var get_data_request = function(url, method){
         return function(callback_function){
-            $.get( url )
-                .done(function( response ){
+            return send_data_request(url, method)(null, callback_function);
+        }
+    };
+
+    var send_data_request = function(url, method){
+        return function(json_string, callback_function){
+            $.ajax({
+                url: url_base + url,
+                type: method,
+                data: json_string,
+                dataType: 'json',
+                contentType: "application/json",
+                success: function(response){
                     verify_response(response, callback_function);
-                })
-                .fail(function( response ){
+                },
+                error: function(response){
                     NotificationClient.error(response.message);
-                });
-        };
+                }
+            });
+        }
     };
 
-    self.get_help = get_request("help");
-    self.get_status = get_request("status");
-    self.get_parameters = get_request("parameters");
-    self.get_statistics = get_request("statistics");
-    self.start = get_request("start");
-    self.stop = get_request("stop");
+    self.start = send_data_request("", "PUT");
+    self.stop = get_data_request("", "DELETE");
 
-    self.set_parameters = function(json_string, callback_function){
-        $.ajax({
-            url: 'parameters',
-            type: 'POST',
-            data: json_string,
-            dataType: 'json',
-            contentType: "application/json",
-            success: function(response){
-                verify_response(response, callback_function);
-            },
-            error: function(response){
-                NotificationClient.error(response.message);
-            }
-        });
-    };
+    self.get_parameters = get_data_request("parameters", "GET");
+    self.set_parameters = send_data_request("parameters", "POST")
+
+    self.get_help = get_data_request("help", "GET");
+    self.get_status = get_data_request("status", "GET");
+    self.get_statistics = get_data_request("statistics", "GET");
+    self.get_statistics_raw = get_data_request("statistics_raw", "GET")
 
     return self;
-})();
+})(instance_name);
 
 var display_process_data = function(){
     APIClient.get_status(function(data){
@@ -96,7 +98,7 @@ var display_process_data = function(){
 $( document ).ready(function() {
 
     $("button#start_processor").click(function(){
-        APIClient.start(function(){
+        APIClient.start(null, function(){
             NotificationClient.success("Processor started.")
             display_process_data();
         })

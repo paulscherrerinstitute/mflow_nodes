@@ -10,6 +10,7 @@ logging.getLogger("mflow.mflow").setLevel(logging.ERROR)
 logging.getLogger("requests").setLevel(logging.ERROR)
 
 parser = ArgumentParser()
+parser.add_argument("instance_name", type=str, help="Name of the node instance. Should be unique.")
 parser.add_argument("listening_address", type=str, help="Listening address for mflow connection.\n"
                                                         "Example: tcp://127.0.0.1:40000")
 parser.add_argument("forwarding_address", type=str, help="Forwarding address for mflow connection.\n"
@@ -40,7 +41,8 @@ if input_args.config_file:
     with open(input_args.config_file) as config_file:
         parameters.update(json.load(config_file))
 
-start_stream_node(processor=HDF5nxmxWriter(h5_writer_stream_address=input_args.forwarding_address,
+start_stream_node(instance_name=input_args.instance_name,
+                  processor=HDF5nxmxWriter(h5_writer_stream_address=input_args.forwarding_address,
                                            h5_writer_control_address=input_args.writer_control_address),
                   processor_parameters=parameters,
                   listening_address=input_args.listening_address,

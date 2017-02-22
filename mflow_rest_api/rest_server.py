@@ -2,15 +2,21 @@ import json
 import os
 from collections import OrderedDict
 from logging import getLogger
-from bottle import request, run, Bottle, static_file, response
+
+import bottle
+from bottle import request, run, Bottle, static_file, response, template
 
 _logger = getLogger(__name__)
 
+API_PATH_FORMAT = "/api/v1/{instance_name}/{{url}}"
+HTML_PATH_FORMAT = "/{instance_name}/{{url}}"
 
-def start_web_interface(process, host, port):
+
+def start_web_interface(process, instance_name, host, port):
     """
     Start the web interface for the supplied external process.
     :param process: External process to communicate with.
+    :param instance_name: Name if this processor instance. Used to set url paths.
     :param host: Host to start the web interface on.
     :param port: Port to start the web interface on.
     :return: None
@@ -19,55 +25,74 @@ def start_web_interface(process, host, port):
     static_root_path = os.path.join(os.path.dirname(__file__), "static")
     _logger.debug("Static files root folder: %s", static_root_path)
 
-    @app.get("/")
-    def index():
-        return static_file(filename="index.html", root=static_root_path)
+    # Set the path for the templates.
+    bottle.TEMPLATE_PATH = [static_root_path]
 
-    @app.get("/help")
+    # Set the URL paths based on the format and instance name.
+    api_path = API_PATH_FORMAT.format(instance_name=instance_name)
+    html_path = HTML_PATH_FORMAT.format(instance_name=instance_name)
+
+    @app.get("/")
+    def redirect_to_index():
+        return bottle.redirect(html_path.format(url=""))
+
+    @app.get(html_path.format(url=""))
+    @bottle.view("index")
+    def index():
+        return {"instance_name": instance_name}
+
+    @app.get(api_path.format(url="help"))
     def get_help():
         return {"status": "ok",
                 "data": process.get_process_help()}
 
-    @app.get("/status")
+    @app.get(api_path.format(url="status"))
     def get_status():
         return {"status": "ok",
                 "data": {"processor_name": process.get_process_name(),
                          "is_running": process.is_running(),
                          "parameters": get_parameters()["data"]}}
 
-    @app.get("/statistics")
+    @app.get(api_path.format(url="statistics"))
     def get_statistics():
         return {"status": "ok",
                 "data": {"statistics": process.get_statistics()}}
 
-    @app.get("/statistics_raw")
+    @app.get(api_path.format(url="statistics_raw"))
     def get_statistics_raw():
         return {"status": "ok",
                 "data": {"processing_times": process.get_statistics_raw()}}
 
-    @app.get("/parameters")
+    @app.get(api_path.format(url="parameters"))
     def get_parameters():
         return {"status": "ok",
                 "data": process.get_parameters()}
 
-    @app.post("/parameters")
-    def set_parameter():
-        for parameter in request.json.items():
+    def _set_parameters(items):
+        for parameter in items:
             _logger.debug("Passing parameter '%s'='%s' to external process." % parameter)
             process.set_parameter(parameter)
 
+    @app.post(api_path.format(url="parameters"))
+    def set_parameter():
+        _set_parameters(request.json.items())
         return {"status": "ok",
                 "message": "Parameters set successfully."}
 
-    @app.get("/start")
+    @app.put(api_path.format(url=""))
+    @app.get(api_path.format(url="start"))
     def start():
+        if request.json:
+            _set_parameters(request.json.items())
+
         _logger.debug("Starting process.")
         process.start()
 
         return {"status": "ok",
                 "message": "Process started."}
 
-    @app.get("/stop")
+    @app.delete(api_path.format(url=""))
+    @app.get(api_path.format(url="stop"))
     def stop():
         _logger.debug("Stopping process.")
         process.stop()
@@ -75,7 +100,7 @@ def start_web_interface(process, host, port):
         return {"status": "ok",
                 "message": "Process stopped."}
 
-    @app.get("/static/<filename:path>")
+    @app.get(html_path.format(url="static/<filename:path>"))
     def get_static(filename):
         return static_file(filename=filename, root=static_root_path)
 
@@ -99,6 +124,7 @@ class RestInterfacedProcess(object):
     """
     Base class for all classes that interact with the Bottle instance.
     """
+
     def get_process_name(self):
         """
         Return the process name.

@@ -11,11 +11,12 @@ from mflow_tools.mflow_message import get_mflow_message
 _logger = getLogger(__name__)
 
 
-def start_stream_node(processor, processor_parameters=None, listening_address="tcp://127.0.0.1:40000",
-                      control_host="0.0.0.0", control_port=8080,
+def start_stream_node(instance_name, processor, processor_parameters=None,
+                      listening_address="tcp://127.0.0.1:40000", control_host="0.0.0.0", control_port=8080,
                       start_listener=False, receive_raw=False):
     """
     Start the ZMQ processing node.
+    :param instance_name: Name of the processor instance. Used for the REST api path.
     :param processor: Stream mflow_processor that does the actual work on the stream data.
     :type processor: StreamProcessor
     :param listening_address: Fully qualified ZMQ stream listening address. Default: "tcp://127.0.0.1:40000"
@@ -41,7 +42,8 @@ def start_stream_node(processor, processor_parameters=None, listening_address="t
         zmq_listener_process.start()
 
     # Attach web interface
-    start_web_interface(process=zmq_listener_process, host=control_host, port=control_port)
+    start_web_interface(instance_name=instance_name, process=zmq_listener_process,
+                        host=control_host, port=control_port)
 
 
 def get_zmq_listener(processor, listening_address, receive_timeout=1000, queue_size=32, receive_raw=False):
@@ -134,7 +136,7 @@ class ExternalProcessWrapper(RestInterfacedProcess):
         Return the status of the process function (running or not).
         :return: True if running, otherwise False.
         """
-        return (self.process and self.process.is_alive()) or False
+        return self.process and self.process.is_alive()
 
     def start(self):
         """
@@ -158,7 +160,7 @@ class ExternalProcessWrapper(RestInterfacedProcess):
         :return: None or Exception if the function is not running.
         """
         _logger.debug("Stopping node.")
-        if not self.process:
+        if not self.is_running():
             raise Exception("External process is already stopped.")
 
         self.stop_event.set()
