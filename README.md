@@ -4,20 +4,11 @@ Every node has a Rest API and a simple web interface to control it. The node loa
 which is used to manipulate, analyze or save the mflow stream.
 
 ## Conda production setup
-If you use conda in production, you can create a production ready environment using the 
-**conda-recipe/production\_env.txt** file.
-
-Before you can do that, you might need to add the **paulscherrerinstitute** channel to 
-your conda config:
+If you use conda in production, you can create a production ready environment 
+by running:
 
 ```bash
-conda config --add channels paulscherrerinstitute
-```
-
-You can create you production environment by running
-
-```bash
-conda create --name <env_name> --file conda-recipe/production_env.txt
+conda create -c paulscherrerinstitute --name <env_name> mflow_nodes
 ```
 
 After that you can just source you newly created environment and start using the library.

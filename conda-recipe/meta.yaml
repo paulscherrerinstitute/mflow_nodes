@@ -1,6 +1,9 @@
 package:
     name: mflow_nodes
-    version: 0.0.1
+    version: 0.0.2
+
+build:
+  number: 1
 
 source:
     path: ..
@@ -11,16 +14,16 @@ requirements:
     run:
         - python
         - mflow >=0.0.16
-        - bitshuffle
+        - bitshuffle ==0.2.4
         - bottle
-        - h5py
+        - h5py >=2.7.*
+        - hdf5 ==1.8.17
         - numpy
         - requests
 
 test:
   source_files:
     - tests/
-
 
 about:
     summary: "Mflow nodes and their processors."

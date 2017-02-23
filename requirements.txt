@@ -1,6 +1,6 @@
 # This file may be used to create an environment using:
 # $ conda create --name <env> --file <this file>
-
+# platform: osx-64
 bitshuffle=0.2.4=py35_0
 bottle=0.12.13=py35_0
 cython=0.25.2=py35_0
