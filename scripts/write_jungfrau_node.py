@@ -15,18 +15,17 @@ parser.add_argument("listening_address", type=str, help="Listening address for m
                                                         "Example: tcp://127.0.0.1:40001")
 parser.add_argument("--output_file", type=str, help="Name of output h5 file to write.")
 parser.add_argument("--rest_port", type=int, default=41001, help="Port for web interface.")
+parser.add_argument("--frame_index_dataset", type=str, default="frame_index", help="Name of the dataset to store "
+                                                                                   "the frame indexes into.")
 input_args = parser.parse_args()
 
 parameters = {"dataset_name": "data",
-              "compression": 32008,
-              "compression_opts": (2048, H5_COMPRESS_LZ4),
-              "output_file": "ignore_jungfrau.h5"
-              }
+              "output_file": "ignore_jungfrau.h5"}
 
 if input_args.output_file:
     parameters["output_file"] = input_args.output_file
 
-plugins = [writer_plugins.write_frame_index_to_dataset("frame_number")]
+plugins = [writer_plugins.write_frame_index_to_dataset(input_args.frame_index_dataset)]
 
 start_stream_node(instance_name=input_args.instance_name,
                   processor=HDF5ChunkedWriterProcessor(plugins=plugins),

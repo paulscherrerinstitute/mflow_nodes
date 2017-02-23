@@ -5,6 +5,11 @@ from mflow_node.processor import MFlowForwarder
 
 
 def generate_frame_data(frame_shape, frame_number):
+    """
+    Generate a frame that is filled with the frame number value.
+    :param frame_shape: Shape of the frame to generate.
+    :param frame_number: Number to fill the frame with.
+    """
     return np.full(shape=frame_shape, fill_value=frame_number, dtype=np.int32)
 
 
