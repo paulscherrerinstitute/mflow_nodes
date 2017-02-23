@@ -19,7 +19,8 @@ input_args = parser.parse_args()
 
 parameters = {"dataset_name": "data",
               "compression": 32008,
-              "compression_opts": (2048, H5_COMPRESS_LZ4)
+              "compression_opts": (2048, H5_COMPRESS_LZ4),
+              "output_file": "ignore_jungfrau.h5"
               }
 
 if input_args.output_file:
