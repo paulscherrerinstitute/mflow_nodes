@@ -1,10 +1,9 @@
 import json
 import os
+import bottle
 from collections import OrderedDict
 from logging import getLogger
-
-import bottle
-from bottle import request, run, Bottle, static_file, response, template
+from bottle import request, run, Bottle, static_file, response
 
 _logger = getLogger(__name__)
 

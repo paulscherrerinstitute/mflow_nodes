@@ -1,8 +1,10 @@
 from logging import getLogger
-from mflow_node.processor import StreamProcessor, MFlowForwarder
+
+from mflow_nodes.processors.base import BaseProcessor
+from mflow_nodes.stream_tools.mflow_forwarder import MFlowForwarder
 
 
-class ProxyProcessor(StreamProcessor):
+class ProxyProcessor(BaseProcessor):
     """
     MFlow Proxy
 

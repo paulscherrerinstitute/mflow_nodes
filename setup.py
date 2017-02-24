@@ -3,24 +3,20 @@ from setuptools import setup
 
 setup(
     name='mflow_nodes',
-    version="0.0.2",
-    description="mflow stream nodes and their processors",
+    version="0.0.3",
+    description="mflow nodes is a library for building processing nodes on top of an mflow stream.",
     author='Paul Scherrer Institute',
     author_email='andrej.babic@psi.ch',
-    requires=["bottle", "mflow", "h5py", "numpy", "bitshuffle", 'requests'],
+    requires=["bottle", "mflow", "numpy", 'requests'],
 
-    scripts=['scripts/write_node.py',
-             'scripts/write_jungfrau_node.py',
-             'scripts/proxy_node.py',
-             "scripts/compression_node.py",
-             "scripts/nxmx_node.py"],
+    packages=['mflow_nodes',
+              'mflow_nodes.processors',
+              'mflow_nodes.rest_api',
+              'mflow_nodes.stream_tools',
+              'mflow_nodes.stream_tools.message_handlers',
+              'mflow_nodes.test_tools'],
 
-    packages=['mflow_node',
-              'mflow_processor',
-              'mflow_processor.utils',
-              'mflow_rest_api',
-              'mflow_tools',
-              'mflow_tools.message_handlers'],
+    scripts=['mflow_nodes/test_tools/mflow_generate_test_stream.py'],
 
     include_package_data=True
 )

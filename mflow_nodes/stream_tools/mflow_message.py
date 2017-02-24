@@ -1,6 +1,6 @@
 from functools import partial
 from logging import getLogger
-from mflow_tools.message_handlers import array_1_0, dheader_1_0, dimage_1_0, dseries_end_1_0
+from mflow_nodes.stream_tools.message_handlers import array_1_0, dheader_1_0, dimage_1_0, dseries_end_1_0
 
 _logger = getLogger(__name__)
 

@@ -1,7 +1,9 @@
-from types import SimpleNamespace
+from argparse import ArgumentParser
 
 import numpy as np
-from mflow_node.processor import MFlowForwarder
+from types import SimpleNamespace
+
+from mflow_nodes.stream_tools.mflow_forwarder import MFlowForwarder
 
 
 def generate_frame_data(frame_shape, frame_number):
@@ -42,5 +44,11 @@ def generate_test_array_stream(target_address="tcp://127.0.0.1:40000", frame_sha
 
     mflow_forwarder.stop()
 
+
 if __name__ == "__main__":
-    generate_test_array_stream("tcp://127.0.0.1:40000")
+    parser = ArgumentParser()
+    parser.add_argument("target_address", type=str, help="Target address for mflow connection.\n"
+                                                         "Example: tcp://127.0.0.1:40001")
+    input_args = parser.parse_args()
+
+    generate_test_array_stream(input_args.target_address)

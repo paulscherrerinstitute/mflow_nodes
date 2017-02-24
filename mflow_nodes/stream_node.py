@@ -4,9 +4,8 @@ from collections import OrderedDict
 from logging import getLogger
 
 from mflow import mflow
-
-from mflow_rest_api.rest_server import start_web_interface, RestInterfacedProcess
-from mflow_tools.mflow_message import get_mflow_message
+from mflow_nodes.rest_api.rest_server import start_web_interface, RestInterfacedProcess
+from mflow_nodes.stream_tools.mflow_message import get_mflow_message
 
 _logger = getLogger(__name__)
 
@@ -107,7 +106,7 @@ class ExternalProcessWrapper(RestInterfacedProcess):
     Wrap the processing function to allow for inter process communication.
     """
 
-    def __init__(self, process_function, initial_parameters, processor_instance=None):
+    def __init__(self, process_function, initial_parameters=None, processor_instance=None):
         """
         Constructor.
         :param process_function: Function to start in a new process.
@@ -214,11 +213,12 @@ class BasicStatistics(object):
     """
     Basic statistics implementation for mflow node.
     """
+
     def __init__(self, shared_namespace, buffer_length=1000):
         """
         Initialize the class.
         :param shared_namespace: Namespace to be shared with the external processor.
-        :param buffer_length: Statistis buffer length. Default 1000.
+        :param buffer_length: Statistics buffer length. Default 1000.
         """
         self._shared_namespace = shared_namespace
         self._buffer_length = buffer_length
@@ -232,8 +232,8 @@ class BasicStatistics(object):
         """
         self._shared_namespace.BasicStatistics = [{"message_length": message.get_data_length(),
                                                    "processing_time": time_delta,
-                                                   "frame": message.get_frame_index()}] \
-                                                 + self._shared_namespace.BasicStatistics[:self._buffer_length - 1]
+                                                   "frame": message.get_frame_index()
+                                                   }] + self._shared_namespace.BasicStatistics[:self._buffer_length - 1]
 
     def get_statistics_raw(self):
         """

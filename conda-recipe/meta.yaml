@@ -1,9 +1,9 @@
 package:
     name: mflow_nodes
-    version: 0.0.2
+    version: 0.0.3
 
 build:
-  number: 1
+  number: 0
 
 source:
     path: ..
@@ -14,10 +14,7 @@ requirements:
     run:
         - python
         - mflow >=0.0.16
-        - bitshuffle ==0.2.4
         - bottle
-        - h5py >=2.7.*
-        - hdf5 ==1.8.17
         - numpy
         - requests
 
@@ -26,4 +23,4 @@ test:
     - tests/
 
 about:
-    summary: "Mflow nodes and their processors."
+    summary: "mflow nodes is a library for building processing nodes on top of an mflow stream."
