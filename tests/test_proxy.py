@@ -5,7 +5,7 @@ from time import sleep
 
 from mflow_nodes.processors.proxy import ProxyProcessor
 from mflow_nodes.stream_node import ExternalProcessWrapper, get_zmq_listener
-from mflow_nodes.test_tools.mflow_generate_test_stream import generate_test_array_stream
+from mflow_nodes.test_tools.m_generate_test_stream import generate_test_array_stream
 from tests.helpers import setup_file_writing_receiver
 
 proxy_address = "tcp://127.0.0.1:40000"

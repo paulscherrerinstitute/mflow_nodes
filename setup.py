@@ -16,7 +16,7 @@ setup(
               'mflow_nodes.stream_tools.message_handlers',
               'mflow_nodes.test_tools'],
 
-    scripts=['mflow_nodes/test_tools/mflow_generate_test_stream.py'],
+    scripts=['mflow_nodes/test_tools/m_generate_test_stream.py'],
 
     include_package_data=True
 )
