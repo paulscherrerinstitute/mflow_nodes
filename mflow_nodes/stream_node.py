@@ -1,9 +1,21 @@
-import multiprocessing
 import time
 from collections import OrderedDict
+from collections import deque
 from logging import getLogger
 
 from mflow import mflow
+
+USE_MULTIPROCESSING = False
+
+if USE_MULTIPROCESSING:
+    from multiprocessing import Queue
+    from multiprocessing import Event
+    from multiprocessing import Process as Runner
+else:
+    from queue import Queue
+    from threading import Event
+    from threading import Thread as Runner
+
 from mflow_nodes.rest_api.rest_server import start_web_interface, RestInterfacedProcess
 from mflow_nodes.stream_tools.mflow_message import get_mflow_message
 
@@ -11,14 +23,14 @@ _logger = getLogger(__name__)
 
 
 def start_stream_node(instance_name, processor, processor_parameters=None,
-                      listening_address="tcp://127.0.0.1:40000", control_host="0.0.0.0", control_port=8080,
+                      connection_address="tcp://127.0.0.1:40000", control_host="0.0.0.0", control_port=8080,
                       start_listener=False, receive_raw=False):
     """
     Start the ZMQ processing node.
     :param instance_name: Name of the processor instance. Used for the REST api path.
     :param processor: Stream mflow_processor that does the actual work on the stream data.
     :type processor: StreamProcessor
-    :param listening_address: Fully qualified ZMQ stream listening address. Default: "tcp://127.0.0.1:40000"
+    :param connection_address: Fully qualified ZMQ stream connection address. Default: "tcp://127.0.0.1:40000"
     :param control_host: Binding host for the control REST API. Default: "0.0.0.0"
     :param control_port: Binding port for the control REST API. Default: 8080
     :param start_listener: If true, the external mflow_processor will be started at node startup.
@@ -26,13 +38,13 @@ def start_stream_node(instance_name, processor, processor_parameters=None,
     :param receive_raw: Pass the raw ZMQ messages to the mflow_processor.
     :return: None
     """
-    _logger.debug("Node set to listen on '%s', with control address '%s:%s'." % (listening_address,
+    _logger.debug("Node set to connect to '%s', with control address '%s:%s'." % (connection_address,
                                                                                  control_host,
                                                                                  control_port))
 
     # Start the ZMQ listener
     zmq_listener_process = ExternalProcessWrapper(get_zmq_listener(processor=processor,
-                                                                   listening_address=listening_address,
+                                                                   connection_address=connection_address,
                                                                    receive_raw=receive_raw),
                                                   initial_parameters=processor_parameters,
                                                   processor_instance=processor)
@@ -45,21 +57,21 @@ def start_stream_node(instance_name, processor, processor_parameters=None,
                         host=control_host, port=control_port)
 
 
-def get_zmq_listener(processor, listening_address, receive_timeout=1000, queue_size=32, receive_raw=False):
+def get_zmq_listener(processor, connection_address, receive_timeout=1000, queue_size=32, receive_raw=False):
     """
     Generate and return the function for listening to the ZMQ stream and process it in the provider mflow_processor.
     :param processor: Stream mflow_processor to be used in this instance.
     :type processor: StreamProcessor
-    :param listening_address: Fully qualified ZMQ stream listening address.
+    :param connection_address: Fully qualified ZMQ stream connection address.
     :param receive_timeout: ZMQ read timeout. Default: 1000.
     :param queue_size: ZMQ queue size. Default: 10.
     :param receive_raw: Return the raw ZMQ message.
     :return: Function to be executed in an external process.
     """
 
-    def zmq_listener(stop_event, statistics_namespace, parameter_queue):
+    def zmq_listener(stop_event, statistics_buffer, parameter_queue):
         # Setup the ZMQ listener and the stream mflow_processor.
-        stream = mflow.connect(address=listening_address,
+        stream = mflow.connect(address=connection_address,
                                conn_type=mflow.CONNECT,
                                mode=mflow.PULL,
                                receive_timeout=receive_timeout,
@@ -70,7 +82,7 @@ def get_zmq_listener(processor, listening_address, receive_timeout=1000, queue_s
             processor.set_parameter(parameter_queue.get())
 
         # Start the statistics class.
-        statistics = BasicStatistics(statistics_namespace)
+        statistics = BasicStatistics(statistics_buffer)
 
         processor.start()
 
@@ -81,7 +93,7 @@ def get_zmq_listener(processor, listening_address, receive_timeout=1000, queue_s
             message = get_mflow_message(receive_function())
 
             # Process only valid messages.
-            if message:
+            if message is not None:
                 start_time = time.time()
                 processor.process_message(message)
                 stop_time = time.time()
@@ -116,12 +128,11 @@ class ExternalProcessWrapper(RestInterfacedProcess):
         self.processor_instance = processor_instance
         self.process = None
 
-        self.manager = multiprocessing.Manager()
-        self.stop_event = multiprocessing.Event()
-        self.parameter_queue = multiprocessing.Queue()
+        self.stop_event = Event()
+        self.parameter_queue = Queue()
 
-        self.statistics_namespace = self.manager.Namespace()
-        self.statistics = BasicStatistics(self.statistics_namespace)
+        self.statistics_buffer = deque(maxlen=1000)
+        self.statistics = BasicStatistics(self.statistics_buffer)
 
         self.current_parameters = initial_parameters or {}
 
@@ -147,8 +158,8 @@ class ExternalProcessWrapper(RestInterfacedProcess):
         if self.is_running():
             raise Exception("External process is already running.")
 
-        self.process = multiprocessing.Process(target=self.process_function,
-                                               args=(self.stop_event, self.statistics_namespace, self.parameter_queue))
+        self.process = Runner(target=self.process_function,
+                              args=(self.stop_event, self.statistics_buffer, self.parameter_queue))
 
         self._set_current_parameters()
         self.process.start()
@@ -168,8 +179,7 @@ class ExternalProcessWrapper(RestInterfacedProcess):
             time.sleep(0.1)
             if not self.process.is_alive():
                 break
-        # Kill process - no-op in case process already terminated
-        self.process.terminate()
+
         self.process = None
 
     def wait(self):
@@ -214,15 +224,12 @@ class BasicStatistics(object):
     Basic statistics implementation for mflow node.
     """
 
-    def __init__(self, shared_namespace, buffer_length=1000):
+    def __init__(self, buffer):
         """
         Initialize the class.
-        :param shared_namespace: Namespace to be shared with the external processor.
         :param buffer_length: Statistics buffer length. Default 1000.
         """
-        self._shared_namespace = shared_namespace
-        self._buffer_length = buffer_length
-        self._shared_namespace.BasicStatistics = []
+        self._buffer = buffer
 
     def save_statistics(self, time_delta, message):
         """
@@ -230,17 +237,16 @@ class BasicStatistics(object):
         :param time_delta: Time needed to process the message.
         :param message: Message that was processed.
         """
-        self._shared_namespace.BasicStatistics = [{"message_length": message.get_data_length(),
-                                                   "processing_time": time_delta,
-                                                   "frame": message.get_frame_index()
-                                                   }] + self._shared_namespace.BasicStatistics[:self._buffer_length - 1]
+        self._buffer.append({"message_length": message.get_data_length(),
+                             "processing_time": time_delta,
+                             "frame": message.get_frame_index()})
 
     def get_statistics_raw(self):
         """
         Return the raw statistics data.
         :return: List of statistic events.
         """
-        return self._shared_namespace.BasicStatistics[:self._buffer_length]
+        return self._buffer
 
     def get_statistics(self):
         """

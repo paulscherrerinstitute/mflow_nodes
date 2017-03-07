@@ -25,7 +25,7 @@ class MFlowForwarder(object):
     def start(self, address):
         """
         Start the mflow connection on the provided address.
-        :param address: Address to forward to.
+        :param address: Address to use for connection.
         :return: None.
         """
         self.stream = mflow.connect(address,

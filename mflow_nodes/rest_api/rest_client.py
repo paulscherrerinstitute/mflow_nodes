@@ -1,5 +1,4 @@
 import json
-from urllib.parse import urljoin
 import requests
 
 
@@ -11,13 +10,13 @@ def set_parameters(base_url, parameters):
     :return: Response message.
     """
     headers = {'content-type': 'application/json'}
-    set_parameters_url = urljoin(base_url, "/parameters")
+    set_parameters_url = base_url.rstrip("/") + "/parameters"
     response = requests.post(set_parameters_url,
                              data=json.dumps(parameters),
                              headers=headers).json()
 
     if response["status"] != "ok":
-        raise ValueError("Cannot set writer parameters. Original error:%s\n" % response["message"])
+        raise ValueError("Cannot set node parameters. Original error:%s\n" % response["message"])
 
     return response["message"]
 
@@ -28,10 +27,10 @@ def start(base_url):
     :param base_url: Base URL of the node.
     :return: Response message.
     """
-    start_command_url = urljoin(base_url, "/start")
+    start_command_url = base_url.rstrip("/") + "/start"
     response = requests.get(start_command_url).json()
     if response["status"] != "ok":
-        raise ValueError("Cannot start writer. Original error:%s\n" % response["message"])
+        raise ValueError("Cannot start node. Original error:%s\n" % response["message"])
 
     return response["message"]
 
@@ -42,9 +41,79 @@ def stop(base_url):
     :param base_url: Base URL of the node.
     :return: Response message.
     """
-    stop_command_url = urljoin(base_url, "/stop")
+    stop_command_url = base_url.rstrip("/") + "/stop"
     response = requests.get(stop_command_url).json()
     if response["status"] != "ok":
-        raise ValueError("Cannot stop writer. Original error:%s\n" % response["message"])
+        raise ValueError("Cannot stop node. Original error:%s\n" % response["message"])
 
     return response["message"]
+
+
+def get_status(base_url):
+    """
+    Get node status.
+    :param base_url: Base URL of the node.
+    :return: Response data.
+    """
+    status_command_url = base_url.rstrip("/") + "/status"
+    response = requests.get(status_command_url).json()
+    if response["status"] != "ok":
+        raise ValueError("Cannot get status. Original error:%s\n" % response["message"])
+
+    return response["data"]
+
+
+def get_statistics(base_url):
+    """
+    Get node statistics.
+    :param base_url: Base URL of the node.
+    :return: Response data.
+    """
+    parameters_command_url = base_url.rstrip("/") + "/statistics"
+    response = requests.get(parameters_command_url).json()
+    if response["status"] != "ok":
+        raise ValueError("Cannot get statistics. Original error:%s\n" % response["message"])
+
+    return response["data"]
+
+
+def get_statistics_raw(base_url):
+    """
+    Get node raw statistics.
+    :param base_url: Base URL of the node.
+    :return: Response data (in JSON string).
+    """
+    parameters_command_url = base_url.rstrip("/") + "/statistics_raw"
+    response = requests.get(parameters_command_url).json()
+    if response["status"] != "ok":
+        raise ValueError("Cannot get raw statistics. Original error:%s\n" % response["message"])
+
+    return response["data"]
+
+
+def get_parameters(base_url):
+    """
+    Get node parameters.
+    :param base_url: Base URL of the node.
+    :return: Response data.
+    """
+    parameters_command_url = base_url.rstrip("/") + "/parameters"
+    response = requests.get(parameters_command_url).json()
+    if response["status"] != "ok":
+        raise ValueError("Cannot get parameters. Original error:%s\n" % response["message"])
+
+    return response["data"]
+
+
+def get_help(base_url):
+    """
+    Get node help.
+    :param base_url: Base URL of the node.
+    :return: Response data.
+    """
+    parameters_command_url = base_url.rstrip("/") + "/help"
+    response = requests.get(parameters_command_url).json()
+    if response["status"] != "ok":
+        raise ValueError("Cannot get help. Original error:%s\n" % response["message"])
+
+    return response["data"]

@@ -31,13 +31,13 @@ class ProxyProcessor(BaseProcessor):
         self.__name__ = name
 
         # Parameters to set.
-        self.forwarding_address = None
+        self.binding_address = None
 
     def _validate_parameters(self):
         error_message = ""
 
-        if not self.forwarding_address:
-            error_message += "Parameter 'forwarding_address' not set.\n"
+        if not self.binding_address:
+            error_message += "Parameter 'binding_address' not set.\n"
 
         if not callable(self._proxy_function):
             error_message += "Parameter 'proxy_function' is not a valid function\n"
@@ -51,9 +51,9 @@ class ProxyProcessor(BaseProcessor):
         # Check if all the needed input parameters are available.
         self._validate_parameters()
 
-        self._logger.debug("Stream forwarding address='%s'." % self.forwarding_address)
+        self._logger.debug("Stream forwarding address='%s'." % self.binding_address)
         self._zmq_forwarder = MFlowForwarder()
-        self._zmq_forwarder.start(self.forwarding_address)
+        self._zmq_forwarder.start(self.binding_address)
 
     def process_message(self, message):
         self._logger.debug("Received frame '%d'. Passing to proxy function." % message.get_frame_index())

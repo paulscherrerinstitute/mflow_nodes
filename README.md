@@ -79,6 +79,13 @@ For example, (supposing your control port is 8080, and your instance name is "ba
 you can execute the following commands in your terminal:
 
 ```bash
+# Start the dummy node.
+m_dummy_node.py base tcp://127.0.0.1:40000 --rest_port 8080
+```
+
+In a separate terminal, try:
+
+```bash
 # Get the processor status.
 curl 0.0.0.0:8080/api/v1/base/status;
 
@@ -98,10 +105,17 @@ curl -X DELETE 0.0.0.0:8080/api/v1/base/;
 Each command will return a JSON object with a status and message. You can also see the results of your actions via 
 the web interface (do not forget to refresh the page after you have made changes).
 
-**NOTE**: You can start such base processor by executing the following script (from the project root):
+#### ConsoleClient
+The REST api is also exposed via a console client. You can load it, for example in ipython:
 
-```bash
-python tests/helpers.py
+```python
+from mflow_nodes import ConsoleClient
+client = ConsoleClient(address="http://127.0.0.1:8080", instance_name="base")
+# Get the status of the node.
+client.get_status()
+# Start the node.
+client.start_node()
+# ..and so on for all the available commands..
 ```
 
 #### Response format

@@ -30,10 +30,10 @@ class ProxyTest(unittest.TestCase):
         processor = ProxyProcessor(proxy_function=proxy_function)
 
         initial_parameters = {
-            "forwarding_address": "tcp://127.0.0.1:40001"
+            "binding_address": "tcp://127.0.0.1:40001"
         }
         self.proxy = ExternalProcessWrapper(get_zmq_listener(processor=processor,
-                                                             listening_address=proxy_address),
+                                                             connection_address=proxy_address),
                                             processor_instance=processor,
                                             initial_parameters=initial_parameters)
         self.proxy.start()

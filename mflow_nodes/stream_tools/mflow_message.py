@@ -16,15 +16,17 @@ def get_mflow_message(message):
     Wrap the mflow return message based on the message type.
     :return MflowMessage or None if no handler is available or message is None.
     """
-    if message:
-        htype = message.data["header"]["htype"]
-        handler = handlers_mapping.get(htype)
-        if not handler:
-            _logger.warning("No handler for htype='%s' available. Dropping message." % htype)
-            return None
+    # Nothing to do here.
+    if message is None:
+        return None
 
-        return MFlowMessage(message, handlers_mapping[htype], htype)
-    return None
+    htype = message.data["header"]["htype"]
+    handler = handlers_mapping.get(htype)
+    if handler is None:
+        _logger.warning("No handler for htype='%s' available. Dropping message." % htype)
+        return None
+
+    return MFlowMessage(message, handler, htype)
 
 
 class MFlowMessage(object):
