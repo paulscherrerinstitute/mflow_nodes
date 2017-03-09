@@ -4,6 +4,8 @@ from collections import deque
 from logging import getLogger
 
 from mflow import mflow
+from mflow_nodes.rest_api.rest_server import start_web_interface, RestInterfacedProcess
+from mflow_nodes.stream_tools.mflow_message import get_mflow_message
 
 USE_MULTIPROCESSING = False
 
@@ -16,8 +18,6 @@ else:
     from threading import Event
     from threading import Thread as Runner
 
-from mflow_nodes.rest_api.rest_server import start_web_interface, RestInterfacedProcess
-from mflow_nodes.stream_tools.mflow_message import get_mflow_message
 
 _logger = getLogger(__name__)
 
@@ -39,8 +39,8 @@ def start_stream_node(instance_name, processor, processor_parameters=None,
     :return: None
     """
     _logger.debug("Node set to connect to '%s', with control address '%s:%s'." % (connection_address,
-                                                                                 control_host,
-                                                                                 control_port))
+                                                                                  control_host,
+                                                                                  control_port))
 
     # Start the ZMQ listener
     zmq_listener_process = ExternalProcessWrapper(get_zmq_listener(processor=processor,
@@ -227,7 +227,7 @@ class BasicStatistics(object):
     def __init__(self, buffer):
         """
         Initialize the class.
-        :param buffer_length: Statistics buffer length. Default 1000.
+        :param buffer: Statistics buffer length. Default 1000.
         """
         self._buffer = buffer
 
