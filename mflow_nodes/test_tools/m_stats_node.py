@@ -16,12 +16,14 @@ parser.add_argument("connect_address", type=str, help="Connect address for mflow
                                                       "Example: tcp://127.0.0.1:40000")
 parser.add_argument("--rest_port", type=int, default=8080, help="Port for web interface.")
 parser.add_argument("--raw", action='store_true', help="Receive the mflow messages in raw mode.")
-parser.add_argument("--sampling_interval", type=float, default=0.5, help="Stream sampling interval in seconds.")
+parser.add_argument("--sampling_interval", type=float, default=0.5, help="Stream sampling interval in seconds."
+                                                                         "If zero, each message will be measured "
+                                                                         "separately.")
 input_args = parser.parse_args()
 
 # Sampling rate must be positive, otherwise infinite loop.
-if input_args.sampling_interval <= 0:
-    raise ValueError("Sampling interval cannot be less or equal zero.")
+if input_args.sampling_interval < 0:
+    raise ValueError("Sampling interval cannot be less than zero.")
 
 
 class StatisticsNode(BaseProcessor):
@@ -40,7 +42,7 @@ class StatisticsNode(BaseProcessor):
         current_time = time.time()
         delta_time = current_time - self.previous_time
 
-        # Update screen every 200ms.
+        # Sample the messages at the defined sampling interval.
         if delta_time > input_args.sampling_interval:
             # Calculate the rate in the last interval.
             total_bytes_received = message.raw_message.statistics.total_bytes_received
