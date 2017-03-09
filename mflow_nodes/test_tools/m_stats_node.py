@@ -62,14 +62,16 @@ class StatisticsNode(BaseProcessor):
             self.previous_messages_received = messages_received
 
     def stop(self):
-        total_mb = self.previous_total_bytes_received/10**6
-        average_mb_message = total_mb / self.previous_messages_received
+        # Print summary only if there was any data.
+        if self.previous_messages_received:
+            total_mb = self.previous_total_bytes_received / 10 ** 6
+            average_mb_message = total_mb / self.previous_messages_received
 
-        print("_" * 60)
-        print("Total MB received: %.3f" % total_mb)
-        print("Total messages received: %d" % self.previous_messages_received)
-        print("Average MB message size: %.3f" % average_mb_message)
-        print("_" * 60)
+            print("_" * 60)
+            print("Total MB received: %.3f" % total_mb)
+            print("Total messages received: %d" % self.previous_messages_received)
+            print("Average MB message size: %.3f" % average_mb_message)
+            print("_" * 60)
 
 
 start_stream_node(instance_name=input_args.instance_name,
