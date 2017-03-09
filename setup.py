@@ -17,7 +17,7 @@ setup(
               'mflow_nodes.test_tools'],
 
     scripts=['mflow_nodes/test_tools/m_generate_test_stream.py',
-             'mflow_nodes/test_tools/m_dummy_node.py'],
+             'mflow_nodes/test_tools/m_stats_node.py'],
 
     include_package_data=True
 )

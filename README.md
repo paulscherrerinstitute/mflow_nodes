@@ -49,11 +49,11 @@ the conda environment with the packages used for developemnt:
 conda create --name <env> --file conda-recipe/conda_env.txt
 ```
 
-### Web interface
+## Web interface
 Each node starts a web interface on **0.0.0.0** using the port provided at the node startup (default port is **8080**).
 Navigate your browser to **0.0.0.0:8080** (or corresponding port) to view the interface.
 
-### REST api
+## REST api
 The web server running the web interface exposes the REST api as well. All the functionality available via the web 
 interface is also available via the REST api. The following endpoints are exposed:
 
@@ -75,42 +75,45 @@ There are 2 variables in the URL schema:
 - **instance\_name**: Name of the processor instance. Each processor should have a unique instance in order to 
 avoid accidental interference from other processes.
 
-For example, (supposing your control port is 8080, and your instance name is "base", and obviously the node is running), 
+For example, (supposing your control port is 8080, and your instance name is "stats", and obviously the node is running), 
 you can execute the following commands in your terminal:
 
 ```bash
-# Start the dummy node.
-m_dummy_node.py base tcp://127.0.0.1:40000 --rest_port 8080
+# Start the stream statistics node.
+#   - Name the instance stats
+#   - Connect to tcp://127.0.0.1:40000
+#   - Expose REST api on port 8080.
+m_stats_node.py stats tcp://127.0.0.1:40000 --rest_port 8080
 ```
 
 In a separate terminal, try:
 
 ```bash
 # Get the processor status.
-curl 0.0.0.0:8080/api/v1/base/status;
+curl 0.0.0.0:8080/api/v1/stats/status;
 
 # Start the processor
-curl -X PUT 0.0.0.0:8080/api/v1/base/;
+curl -X PUT 0.0.0.0:8080/api/v1/stats/;
 
 # Set processor parameters (in this case, we update or set only the value of one parameter):
 curl -H "Content-Type: application/json" -X POST -d '{"parameter_name":"parameter_value"}' 0.0.0.0:8080/api/v1/base/parameters;
 
 # Get processor parameters.
-curl 0.0.0.0:8080/api/v1/base/parameters;
+curl 0.0.0.0:8080/api/v1/stats/parameters;
 
 # Stop the processor
-curl -X DELETE 0.0.0.0:8080/api/v1/base/;
+curl -X DELETE 0.0.0.0:8080/api/v1/stats/;
 ```
 
 Each command will return a JSON object with a status and message. You can also see the results of your actions via 
 the web interface (do not forget to refresh the page after you have made changes).
 
-#### ConsoleClient
+### Console Client
 The REST api is also exposed via a console client. You can load it, for example in ipython:
 
 ```python
 from mflow_nodes import ConsoleClient
-client = ConsoleClient(address="http://127.0.0.1:8080", instance_name="base")
+client = ConsoleClient(address="http://127.0.0.1:8080", instance_name="stats")
 # Get the status of the node.
 client.get_status()
 # Start the node.
@@ -118,7 +121,7 @@ client.start_node()
 # ..and so on for all the available commands..
 ```
 
-#### Response format
+### Response format
 The response format is always JSON. The JSON has one mandatory field, **status**, and 2 optional fields, **message** 
 and **data**.
 
@@ -149,3 +152,11 @@ is not always present.
     "is_running": true
 }
 ```
+
+## Testing tools
+There are 2 executable scripts to test your setup and debug any potential issues on the network:
+
+- **m\_stats\_node.py** (mflow node processor that measures your network speed when using mflow nodes)
+- **m\_generate\_test\_stream.py** (generates a test stream to debug your nodes or network)
+
+All executable scripts are added to you PATH when the library is installed.
