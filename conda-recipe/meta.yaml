@@ -17,6 +17,7 @@ requirements:
         - bottle
         - numpy
         - requests
+        - ujson
 
 test:
   source_files:
