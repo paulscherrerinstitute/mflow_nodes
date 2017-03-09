@@ -14,7 +14,7 @@ if USE_MULTIPROCESSING:
     from multiprocessing import Event
     from multiprocessing import Process as Runner
 else:
-    from queue import Queue
+    from queue import Queue, Empty
     from threading import Event
     from threading import Thread as Runner
 
@@ -70,12 +70,6 @@ def get_zmq_listener(processor, connection_address, receive_timeout=1000, queue_
     """
 
     def zmq_listener(stop_event, statistics_buffer, parameter_queue):
-        # Setup the ZMQ listener and the stream mflow_processor.
-        stream = mflow.connect(address=connection_address,
-                               conn_type=mflow.CONNECT,
-                               mode=mflow.PULL,
-                               receive_timeout=receive_timeout,
-                               queue_size=queue_size)
 
         # Pass all the queued parameters before starting the mflow_processor.
         while not parameter_queue.empty():
@@ -86,29 +80,53 @@ def get_zmq_listener(processor, connection_address, receive_timeout=1000, queue_
 
         processor.start()
 
-        # Setup the receive function according to the raw parameter.
-        receive_function = stream.receive_raw if receive_raw else stream.receive
+        def receiver(stop_event, data_queue):
+            # Setup the ZMQ listener and the stream mflow_processor.
+            stream = mflow.connect(address=connection_address,
+                                   conn_type=mflow.CONNECT,
+                                   mode=mflow.PULL,
+                                   receive_timeout=receive_timeout,
+                                   queue_size=queue_size)
+
+            # Setup the receive function according to the raw parameter.
+            receive_function = stream.receive_raw if receive_raw else stream.receive
+
+            while not stop_event.is_set():
+                message = get_mflow_message(receive_function())
+
+                # Process only valid messages.
+                if message is not None:
+                    data_queue.put(message, timeout=receive_timeout)
+
+            stream.disconnect()
+
+        data_queue = Queue(maxsize=16)
+        receiver_loop = Runner(target=receiver, args=(stop_event, data_queue))
+        receiver_loop.start()
 
         while not stop_event.is_set():
-            message = get_mflow_message(receive_function())
+            try:
+                message = data_queue.get(timeout=receive_timeout)
 
-            # Process only valid messages.
-            if message is not None:
                 start_time = time.time()
                 processor.process_message(message)
                 stop_time = time.time()
 
                 statistics.save_statistics(time_delta=stop_time - start_time,
                                            message=message)
+            except Empty:
+                pass
 
             # If available, pass parameters to the mflow_processor.
             while not parameter_queue.empty():
                 processor.set_parameter(parameter_queue.get())
 
+        # Wait for the receiver to quit.
+        receiver_loop.join()
+
         # Clean up after yourself.
         stop_event.clear()
         processor.stop()
-        stream.disconnect()
 
     return zmq_listener
 
