@@ -1,13 +1,14 @@
 import json
 
 from mflow_nodes.processors.base import BaseProcessor
-from mflow_nodes.stream_node import ExternalProcessWrapper, get_zmq_listener
+from mflow_nodes.stream_node import get_processor_function, get_receiver_function
+from mflow_nodes.node_manager import ExternalProcessWrapper
 
 
-def setup_file_writing_receiver(listening_address, output_filename):
+def setup_file_writing_receiver(connect_address, output_filename):
     """
     Setup a node that writis the message headers into an output file for later inspection.
-    :param listening_address: Address the node listens on.
+    :param connect_address: Address the node connects to.
     :param output_filename: Output file.
     :return: Instance of ExternalProcessWrapper.
     """
@@ -26,8 +27,8 @@ def setup_file_writing_receiver(listening_address, output_filename):
 
     processor = BaseProcessor()
     processor.process_message = process_message
-    receiver = ExternalProcessWrapper(get_zmq_listener(processor=processor,
-                                                       connection_address=listening_address),
+    receiver = ExternalProcessWrapper(processor_function=get_processor_function(processor=processor),
+                                      receiver_function=get_receiver_function(connection_address=connect_address),
                                       processor_instance=processor)
 
     return receiver

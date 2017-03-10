@@ -1,9 +1,9 @@
 package:
     name: mflow_nodes
-    version: 0.0.3
+    version: 0.0.4
 
 build:
-  number: 3
+  number: 0
 
 source:
     path: ..

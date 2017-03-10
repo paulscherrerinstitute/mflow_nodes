@@ -4,7 +4,8 @@ import unittest
 from time import sleep
 
 from mflow_nodes.processors.proxy import ProxyProcessor
-from mflow_nodes.stream_node import ExternalProcessWrapper, get_zmq_listener
+from mflow_nodes.stream_node import get_processor_function, get_receiver_function
+from mflow_nodes.node_manager import ExternalProcessWrapper
 from mflow_nodes.test_tools.m_generate_test_stream import generate_test_array_stream
 from tests.helpers import setup_file_writing_receiver
 
@@ -15,7 +16,6 @@ number_of_frames = 16
 
 
 class ProxyTest(unittest.TestCase):
-
     def setUp(self):
         # Setup receiving node.
         self.receiver = setup_file_writing_receiver(writer_address, output_filename)
@@ -32,10 +32,11 @@ class ProxyTest(unittest.TestCase):
         initial_parameters = {
             "binding_address": "tcp://127.0.0.1:40001"
         }
-        self.proxy = ExternalProcessWrapper(get_zmq_listener(processor=processor,
-                                                             connection_address=proxy_address),
+        self.proxy = ExternalProcessWrapper(processor_function=get_processor_function(processor=processor),
+                                            receiver_function=get_receiver_function(connection_address=proxy_address),
                                             processor_instance=processor,
                                             initial_parameters=initial_parameters)
+
         self.proxy.start()
 
     def tearDown(self):
