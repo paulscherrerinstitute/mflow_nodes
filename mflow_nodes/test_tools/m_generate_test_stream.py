@@ -55,5 +55,8 @@ if __name__ == "__main__":
     parser.add_argument("--frame_size", type=int, default=4, help="Number of values X and Y direction, per frame.")
     input_args = parser.parse_args()
 
-    generate_test_array_stream(input_args.binding_address, number_of_frames=input_args.n_frames,
-                               frame_shape=(input_args.frame_size, input_args.frame_size))
+    try:
+        generate_test_array_stream(input_args.binding_address, number_of_frames=input_args.n_frames,
+                                   frame_shape=(input_args.frame_size, input_args.frame_size))
+    except KeyboardInterrupt:
+        print("Terminated by user.")
