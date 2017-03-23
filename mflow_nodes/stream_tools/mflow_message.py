@@ -57,5 +57,8 @@ class MFlowMessage(object):
     def get_frame_dtype(self):
         return self.handler.get_frame_dtype(self.raw_message)
 
+    def get_statistics(self):
+        return self.raw_message.statistics
+
     def __str__(self):
         return str(self.get_header())
