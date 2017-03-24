@@ -1,6 +1,6 @@
 from logging import getLogger
 
-from mflow_nodes.stream_tools.message_handlers import array_1_0, dheader_1_0, dimage_1_0, dseries_end_1_0
+from mflow_nodes.stream_tools.message_handlers import array_1_0, dheader_1_0, dimage_1_0, dseries_end_1_0, raw_1_0
 
 _logger = getLogger(__name__)
 
@@ -8,7 +8,8 @@ _logger = getLogger(__name__)
 handlers_mapping = {"array-1.0": array_1_0.MessageHandler,
                     "dheader-1.0": dheader_1_0.MessageHandler,
                     "dimage-1.0": dimage_1_0.MessageHandler,
-                    "dseries_end-1.0": dseries_end_1_0.MessageHandler}
+                    "dseries_end-1.0": dseries_end_1_0.MessageHandler,
+                    "raw-1.0": raw_1_0.MessageHandler}
 
 
 def get_mflow_message(message):
