@@ -12,7 +12,7 @@ class MessageHandler(object):
 
     @staticmethod
     def get_data_length(message):
-        return len(message.data["data"][0])
+        return message.data["data"][0].nbytes
 
     @staticmethod
     def get_data(message):
