@@ -5,7 +5,7 @@ from mflow import mflow
 from mflow.tools import ThroughputStatistics
 from mflow_nodes.node_manager import ExternalProcessWrapper
 from mflow_nodes.rest_api.rest_server import start_web_interface
-from mflow_nodes.stream_tools.mflow_message import get_mflow_message
+from mflow_nodes.stream_tools.mflow_message import get_mflow_message, get_raw_mflow_message
 
 _logger = getLogger(__name__)
 
@@ -65,11 +65,12 @@ def get_receiver_function(connection_address, receive_timeout=1000, queue_size=3
                                receive_timeout=receive_timeout,
                                queue_size=queue_size)
 
-        # Setup the receive function according to the raw parameter.
+        # Setup the receive and converter function according to the raw parameter.
         receive_function = stream.receive_raw if receive_raw else stream.receive
+        mflow_message_function = get_raw_mflow_message if receive_raw else get_mflow_message
 
         while not stop_event.is_set():
-            message = get_mflow_message(receive_function())
+            message = mflow_message_function(receive_function())
 
             # Process only valid messages.
             if message is not None:

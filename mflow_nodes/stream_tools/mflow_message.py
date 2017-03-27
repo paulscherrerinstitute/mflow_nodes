@@ -31,6 +31,10 @@ def get_mflow_message(message):
     return MFlowMessage(message, handler, htype)
 
 
+def get_raw_mflow_message(message):
+    return MFlowMessage(message, handlers_mapping["raw-1.0"], message.data["header"]["htype"])
+
+
 class MFlowMessage(object):
     """
     Wrap for the mflow message.
