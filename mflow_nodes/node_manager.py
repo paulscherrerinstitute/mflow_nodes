@@ -1,5 +1,8 @@
-from collections import deque, OrderedDict
+from argparse import Namespace
+from collections import deque
 from logging import getLogger
+
+from mflow.tools import ThroughputStatistics
 
 USE_MULTIPROCESSING = False
 
@@ -43,8 +46,9 @@ class ExternalProcessWrapper(RestInterfacedProcess):
         self.stop_event = Event()
         self.parameter_queue = Queue()
 
-        self.statistics_buffer = deque(maxlen=1000)
-        self.statistics = BasicStatistics(self.statistics_buffer)
+        self.statistics_buffer = deque(maxlen=100)
+        self.statistics_namespace = Namespace()
+        self.statistics = ThroughputStatistics(self.statistics_buffer, self.statistics_namespace)
 
         self.current_parameters = initial_parameters or {}
 
@@ -74,7 +78,7 @@ class ExternalProcessWrapper(RestInterfacedProcess):
         data_queue = Queue(maxsize=16)
 
         self.process_thread = Runner(target=self.process_function,
-                                     args=(self.stop_event, self.statistics_buffer,
+                                     args=(self.stop_event, self.statistics_buffer, self.statistics_namespace,
                                            self.parameter_queue, data_queue))
 
         self.receiver_thread = Runner(target=self.receiver_function,
@@ -103,9 +107,6 @@ class ExternalProcessWrapper(RestInterfacedProcess):
 
         self.process_thread = None
         self.receiver_thread = None
-
-    def wait(self):
-        self.process_thread.join()
 
     def set_parameter(self, parameter):
         """
@@ -138,59 +139,4 @@ class ExternalProcessWrapper(RestInterfacedProcess):
         return self.statistics.get_statistics()
 
     def get_statistics_raw(self):
-        return self.statistics.get_statistics_raw()
-
-
-class BasicStatistics(object):
-    """
-    Basic statistics implementation for mflow node.
-    """
-
-    def __init__(self, buffer):
-        """
-        Initialize the class.
-        :param buffer: Statistics buffer length. Default 1000.
-        """
-        self._buffer = buffer
-
-    def save_statistics(self, time_delta, message):
-        """
-        Add statistics point to the buffer.
-        :param time_delta: Time needed to process the message.
-        :param message: Message that was processed.
-        """
-        self._buffer.append({"message_length": message.get_data_length(),
-                             "processing_time": time_delta,
-                             "frame": message.get_frame_index()})
-
-    def get_statistics_raw(self):
-        """
-        Return the raw statistics data.
-        :return: List of statistic events.
-        """
-        return self._buffer
-
-    def get_statistics(self):
-        """
-        Get the processed statistics. Aggregate them together and display averages.
-        Dictionary of statistic values.
-        """
-        raw_data = self.get_statistics_raw()
-        # Check if there is any statistics at all.
-        if not raw_data:
-            return {}
-
-        total_number_frames = len(raw_data)
-        total_time = sum((x["processing_time"] for x in raw_data))
-        total_bytes = sum((x["message_length"] for x in raw_data))
-
-        frame_rate = total_number_frames / total_time
-        bytes_rate = total_bytes / total_time
-
-        statistics = {"total_time_seconds": total_time,
-                      "total_frames": total_number_frames,
-                      "frame_per_second": frame_rate,
-                      "total_bytes": total_bytes,
-                      "bytes_per_second": bytes_rate}
-
-        return OrderedDict(sorted(statistics.items()))
+        return list(self.statistics.get_statistics_raw())

@@ -2,9 +2,7 @@ import logging
 import sys
 from argparse import ArgumentParser
 
-import time
-
-from mflow.tools import StreamStatisticsPrinter
+from mflow.tools import ThroughputStatisticsPrinter
 
 from mflow_nodes.processors.base import BaseProcessor
 from mflow_nodes.stream_node import start_stream_node
@@ -30,13 +28,14 @@ if input_args.sampling_interval < 0:
 
 class StatisticsNode(BaseProcessor):
     def __init__(self, sampling_interval):
-        self.statistics = StreamStatisticsPrinter(sampling_interval=sampling_interval)
+        self.sampling_interval = sampling_interval
+        self._statistics = ThroughputStatisticsPrinter(sampling_interval=sampling_interval)
 
     def process_message(self, message):
-        self.statistics.process_statistics(message.get_statistics())
+        self._statistics.save_statistics(message.get_statistics())
 
     def stop(self):
-        self.statistics.print_summary()
+        self._statistics.print_summary()
 
 
 start_stream_node(instance_name=input_args.instance_name,

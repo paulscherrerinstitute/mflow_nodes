@@ -1,10 +1,9 @@
-import time
 from logging import getLogger
 from queue import Empty
 
 from mflow import mflow
-
-from mflow_nodes.node_manager import ExternalProcessWrapper, BasicStatistics
+from mflow.tools import ThroughputStatistics
+from mflow_nodes.node_manager import ExternalProcessWrapper
 from mflow_nodes.rest_api.rest_server import start_web_interface
 from mflow_nodes.stream_tools.mflow_message import get_mflow_message
 
@@ -21,6 +20,7 @@ def start_stream_node(instance_name, processor, processor_parameters=None,
     :type processor: StreamProcessor
     :param connection_address: Fully qualified ZMQ stream connection address. Default: "tcp://127.0.0.1:40000"
     :param control_host: Binding host for the control REST API. Default: "0.0.0.0"
+    :param control_port: Binding port for the control REST API. Default: 8080
     :param control_port: Binding port for the control REST API. Default: 8080
     :param start_listener: If true, the external mflow_processor will be started at node startup.
     :param processor_parameters: List of arguments to pass to the string mflow_processor start command.
@@ -88,14 +88,14 @@ def get_processor_function(processor, read_timeout=1000):
     :param read_timeout: Timeout to read the data queue, in milliseconds. Default: 1000.
     :return: Function to be executed in an external thread.
     """
-    def processor_function(stop_event, statistics_buffer, parameter_queue, data_queue):
+    def processor_function(stop_event, statistics_buffer, statistics_namespace, parameter_queue, data_queue):
 
         # Pass all the queued parameters before starting the mflow_processor.
         while not parameter_queue.empty():
             processor.set_parameter(parameter_queue.get())
 
         # Start the statistics class.
-        statistics = BasicStatistics(statistics_buffer)
+        statistics = ThroughputStatistics(statistics_buffer, statistics_namespace)
 
         processor.start()
 
@@ -105,13 +105,8 @@ def get_processor_function(processor, read_timeout=1000):
         while not stop_event.is_set():
             try:
                 message = data_queue.get(timeout=queue_timeout)
-
-                start_time = time.time()
                 processor.process_message(message)
-                stop_time = time.time()
-
-                statistics.save_statistics(time_delta=stop_time - start_time,
-                                           message=message)
+                statistics.save_statistics(message.get_statistics())
             except Empty:
                 pass
 
@@ -119,6 +114,8 @@ def get_processor_function(processor, read_timeout=1000):
             while not parameter_queue.empty():
                 processor.set_parameter(parameter_queue.get())
 
+        # Save the last statistics events even if the sampling interval was not reached.
+        statistics.flush()
         processor.stop()
 
     return processor_function

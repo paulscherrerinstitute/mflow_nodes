@@ -60,7 +60,7 @@ def start_web_interface(process, instance_name, host, port):
     @app.get(api_path.format(url="statistics_raw"))
     def get_statistics_raw():
         return {"status": "ok",
-                "data": {"processing_times": process.get_statistics_raw()}}
+                "data": {"statistics_raw": process.get_statistics_raw()}}
 
     @app.get(api_path.format(url="parameters"))
     def get_parameters():
