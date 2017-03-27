@@ -16,7 +16,11 @@ class MessageHandler(object):
 
     @staticmethod
     def get_data(message):
-        return message.data["data"]
+        # Usually there is only 1 data message, in this case do not return a list.
+        if len(message.data["data"]) == 1:
+            return message.data["data"][0]
+        else:
+            return message.data["data"]
 
     @staticmethod
     def get_frame_size(message):

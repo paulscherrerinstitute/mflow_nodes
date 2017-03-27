@@ -32,6 +32,10 @@ def get_mflow_message(message):
 
 
 def get_raw_mflow_message(message):
+    # Nothing to do here.
+    if message is None:
+        return None
+
     return MFlowMessage(message, handlers_mapping["raw-1.0"], message.data["header"]["htype"])
 
 
