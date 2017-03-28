@@ -9,6 +9,7 @@ from mflow_nodes.stream_node import start_stream_node
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 logging.getLogger("mflow.mflow").setLevel(logging.ERROR)
+logging.getLogger("ThroughputStatistics").setLevel(logging.ERROR)
 
 parser = ArgumentParser()
 parser.add_argument("instance_name", type=str, help="Name of the node instance. Should be unique.")
