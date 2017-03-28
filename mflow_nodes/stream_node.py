@@ -3,7 +3,7 @@ from queue import Empty
 
 from mflow import mflow
 from mflow.tools import ThroughputStatistics
-from mflow_nodes.node_manager import ExternalProcessWrapper
+from mflow_nodes.node_manager import NodeManager
 from mflow_nodes.rest_api.rest_server import start_web_interface
 from mflow_nodes.stream_tools.mflow_message import get_mflow_message, get_raw_mflow_message
 
@@ -21,7 +21,6 @@ def start_stream_node(instance_name, processor, processor_parameters=None,
     :param connection_address: Fully qualified ZMQ stream connection address. Default: "tcp://127.0.0.1:40000"
     :param control_host: Binding host for the control REST API. Default: "0.0.0.0"
     :param control_port: Binding port for the control REST API. Default: 8080
-    :param control_port: Binding port for the control REST API. Default: 8080
     :param start_listener: If true, the external mflow_processor will be started at node startup.
     :param processor_parameters: List of arguments to pass to the string mflow_processor start command.
     :param receive_raw: Pass the raw ZMQ messages to the mflow_processor.
@@ -32,12 +31,12 @@ def start_stream_node(instance_name, processor, processor_parameters=None,
                                                                                   control_port))
 
     # Start the ZMQ listener
-    zmq_listener_process = ExternalProcessWrapper(processor_function=get_processor_function(processor=processor),
-                                                  receiver_function=get_receiver_function(
+    zmq_listener_process = NodeManager(processor_function=get_processor_function(processor=processor),
+                                       receiver_function=get_receiver_function(
                                                       connection_address=connection_address,
                                                       receive_raw=receive_raw),
-                                                  initial_parameters=processor_parameters,
-                                                  processor_instance=processor)
+                                       initial_parameters=processor_parameters,
+                                       processor_instance=processor)
 
     if start_listener:
         zmq_listener_process.start()

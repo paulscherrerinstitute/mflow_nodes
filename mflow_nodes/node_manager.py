@@ -20,7 +20,7 @@ from mflow_nodes.rest_api.rest_server import RestInterfacedProcess
 _logger = getLogger(__name__)
 
 
-class ExternalProcessWrapper(RestInterfacedProcess):
+class NodeManager(RestInterfacedProcess):
     """
     Wrap the processing function to allow for inter process communication.
     """

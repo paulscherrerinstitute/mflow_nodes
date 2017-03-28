@@ -5,7 +5,7 @@ from time import sleep
 
 from mflow_nodes.processors.proxy import ProxyProcessor
 from mflow_nodes.stream_node import get_processor_function, get_receiver_function
-from mflow_nodes.node_manager import ExternalProcessWrapper
+from mflow_nodes.node_manager import NodeManager
 from mflow_nodes.test_tools.m_generate_test_stream import generate_test_array_stream
 from tests.helpers import setup_file_writing_receiver
 
@@ -32,10 +32,10 @@ class ProxyTest(unittest.TestCase):
         initial_parameters = {
             "binding_address": "tcp://127.0.0.1:40001"
         }
-        self.proxy = ExternalProcessWrapper(processor_function=get_processor_function(processor=processor),
-                                            receiver_function=get_receiver_function(connection_address=proxy_address),
-                                            processor_instance=processor,
-                                            initial_parameters=initial_parameters)
+        self.proxy = NodeManager(processor_function=get_processor_function(processor=processor),
+                                 receiver_function=get_receiver_function(connection_address=proxy_address),
+                                 processor_instance=processor,
+                                 initial_parameters=initial_parameters)
 
         self.proxy.start()
 
