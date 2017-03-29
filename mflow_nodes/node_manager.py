@@ -1,23 +1,23 @@
 from argparse import Namespace
 from collections import deque
+from enum import Enum
 from logging import getLogger
+from queue import Queue
+from threading import Event
+from threading import Thread
 
 from mflow.tools import ThroughputStatistics
-
-USE_MULTIPROCESSING = False
-
-if USE_MULTIPROCESSING:
-    from multiprocessing import Queue
-    from multiprocessing import Event
-    from multiprocessing import Process as Runner
-else:
-    from queue import Queue
-    from threading import Event
-    from threading import Thread as Runner
-
 from mflow_nodes.rest_api.rest_server import RestInterfacedProcess
 
 _logger = getLogger(__name__)
+
+
+class ThreadState(Enum):
+    NON_EXISTANT = 0
+    INITIALIZED = 1
+    RUNNING = 2
+    STOPPED = 3
+    EXCEPTION = 4
 
 
 class NodeManager(RestInterfacedProcess):
@@ -42,6 +42,13 @@ class NodeManager(RestInterfacedProcess):
 
         self.receiver_function = receiver_function
         self.receiver_thread = None
+
+        # Setup state communication namespace.
+        self.state_namespace = Namespace()
+        self.state_namespace.receiver = ThreadState.NON_EXISTANT
+        self.state_namespace.receiver_exception = None
+        self.state_namespace.process = ThreadState.NON_EXISTANT
+        self.state_namespace.process_exception = None
 
         self.stop_event = Event()
         self.parameter_queue = Queue()
@@ -77,11 +84,11 @@ class NodeManager(RestInterfacedProcess):
 
         data_queue = Queue(maxsize=16)
 
-        self.process_thread = Runner(target=self.process_function,
+        self.process_thread = Thread(target=self.process_function,
                                      args=(self.stop_event, self.statistics_buffer, self.statistics_namespace,
                                            self.parameter_queue, data_queue))
 
-        self.receiver_thread = Runner(target=self.receiver_function,
+        self.receiver_thread = Thread(target=self.receiver_function,
                                       args=(self.stop_event, data_queue))
 
         self._set_current_parameters()
