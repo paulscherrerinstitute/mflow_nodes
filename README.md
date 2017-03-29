@@ -108,12 +108,12 @@ curl -X DELETE 0.0.0.0:8080/api/v1/stats/;
 Each command will return a JSON object with a status and message. You can also see the results of your actions via 
 the web interface (do not forget to refresh the page after you have made changes).
 
-### Console Client
-The REST api is also exposed via a console client. You can load it, for example in ipython:
+### REST Client
+The REST api is also exposed via a client class. You can load it, for example in ipython:
 
 ```python
-from mflow_nodes import ConsoleClient
-client = ConsoleClient(address="http://127.0.0.1:8080", instance_name="stats")
+from mflow_nodes import NodeClient
+client = NodeClient(address="http://127.0.0.1:8080", instance_name="stats")
 # Get the status of the node.
 client.get_status()
 # Start the node.
