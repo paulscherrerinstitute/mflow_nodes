@@ -38,6 +38,8 @@ def start_stream_node(instance_name, processor, processor_parameters=None,
                                processor_instance=processor)
 
     if start_node_immediately:
+        # We on purpose do not catch the possible exceptions here.
+        # If the node is started with start immediately, it should also immediately throw an exception.
         node_manager.start()
 
     # Attach web interface
@@ -79,6 +81,7 @@ def get_receiver_function(connection_address, receive_timeout=1000, queue_size=3
 
             stream.disconnect()
         except Exception as e:
+            _logger.error(e)
             running_event.clear()
 
     return receiver_function
@@ -125,6 +128,7 @@ def get_processor_function(processor, read_timeout=1000):
             statistics.flush()
             processor.stop()
         except Exception as e:
+            _logger.error(e)
             running_event.clear()
 
     return processor_function

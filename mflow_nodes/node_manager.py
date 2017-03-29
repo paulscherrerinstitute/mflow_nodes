@@ -80,7 +80,7 @@ class NodeManager(RestInterfacedProcess):
         self.receiver_thread.start()
 
         # Both thread need to set the running event. If not, something went wrong.
-        if not (self.receiver_running.wait(1) and self.processor_running.wait(1)):
+        if not (self.receiver_running.wait(5) and self.processor_running.wait(5)):
             error = "An exception occurred during the startup."
             _logger.error(error)
             raise ValueError(error)

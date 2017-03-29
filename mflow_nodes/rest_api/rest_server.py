@@ -115,8 +115,7 @@ def start_web_interface(process, instance_name, host, port):
         run(app=app, host=host, port=port)
     finally:
         # Close the external processor when terminating the web server.
-        if process.is_running():
-            process.stop()
+        process.stop()
 
 
 class RestInterfacedProcess(object):
