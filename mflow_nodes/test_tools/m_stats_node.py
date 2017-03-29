@@ -44,4 +44,4 @@ start_stream_node(instance_name=input_args.instance_name,
                   connection_address=input_args.connect_address,
                   control_port=input_args.rest_port,
                   receive_raw=input_args.raw,
-                  start_listener=True)
+                  start_node_immediately=True)
