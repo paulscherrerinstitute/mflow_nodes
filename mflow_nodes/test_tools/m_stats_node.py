@@ -1,30 +1,10 @@
-import logging
-import sys
 from argparse import ArgumentParser
 
 from mflow.tools import ThroughputStatisticsPrinter
 
 from mflow_nodes.processors.base import BaseProcessor
-from mflow_nodes.stream_node import start_stream_node
-
-logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-logging.getLogger("mflow.mflow").setLevel(logging.ERROR)
-logging.getLogger("ThroughputStatistics").setLevel(logging.ERROR)
-
-parser = ArgumentParser()
-parser.add_argument("instance_name", type=str, help="Name of the node instance. Should be unique.")
-parser.add_argument("connect_address", type=str, help="Connect address for mflow.\n"
-                                                      "Example: tcp://127.0.0.1:40000")
-parser.add_argument("--rest_port", type=int, default=8080, help="Port for web interface.")
-parser.add_argument("--raw", action='store_true', help="Receive the mflow messages in raw mode.")
-parser.add_argument("--sampling_interval", type=float, default=0.5, help="Stream sampling interval in seconds."
-                                                                         "If zero, each message will be measured "
-                                                                         "separately.")
-input_args = parser.parse_args()
-
-# Sampling rate must be positive, otherwise infinite loop.
-if input_args.sampling_interval < 0:
-    raise ValueError("Sampling interval cannot be less than zero.")
+from mflow_nodes.script_tools import setup_console_logging, add_default_arguments, construct_processor_parameters, \
+    start_stream_node_helper
 
 
 class StatisticsNode(BaseProcessor):
@@ -39,9 +19,20 @@ class StatisticsNode(BaseProcessor):
         self._statistics.print_summary()
 
 
-start_stream_node(instance_name=input_args.instance_name,
-                  processor=StatisticsNode(input_args.sampling_interval),
-                  connection_address=input_args.connect_address,
-                  control_port=input_args.rest_port,
-                  receive_raw=input_args.raw,
-                  start_node_immediately=True)
+def run(input_args, parameters=None):
+    # Sampling rate must be positive or zero(sample each message), otherwise infinite loop.
+    if input_args.sampling_interval < 0:
+        raise ValueError("Sampling interval cannot be less than zero.")
+
+    start_stream_node_helper(StatisticsNode(input_args.sampling_interval), input_args, parameters,
+                             start_node_immediately=True)
+
+if __name__ == "__main__":
+    setup_console_logging()
+
+    parser = ArgumentParser()
+    add_default_arguments(parser, binding_argument=False, default_rest_port=40000)
+    parser.add_argument("--sampling_interval", type=float, default=0.5, help="Stream sampling interval in seconds."
+                                                                             "If zero, each message will be measured "
+                                                                             "separately.")
+    run(parser.parse_args())
