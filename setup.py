@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name='mflow_nodes',
-    version="0.0.3",
+    version="0.0.5",
     description="mflow nodes is a library for building processing nodes on top of an mflow stream.",
     author='Paul Scherrer Institute',
     author_email='andrej.babic@psi.ch',
@@ -16,7 +16,8 @@ setup(
               'mflow_nodes.stream_tools.message_handlers',
               'mflow_nodes.test_tools'],
 
-    scripts=['mflow_nodes/test_tools/m_generate_test_stream.py',
+    scripts=['mflow_nodes/script_tools/m_manage.py',
+             'mflow_nodes/test_tools/m_generate_test_stream.py',
              'mflow_nodes/test_tools/m_stats_node.py'],
 
     include_package_data=True

@@ -3,8 +3,7 @@ from argparse import ArgumentParser
 from mflow.tools import ThroughputStatisticsPrinter
 
 from mflow_nodes.processors.base import BaseProcessor
-from mflow_nodes.script_tools import setup_console_logging, add_default_arguments, construct_processor_parameters, \
-    start_stream_node_helper
+from mflow_nodes.script_tools.helpers import setup_console_logging, add_default_arguments, start_stream_node_helper
 
 
 class StatisticsNode(BaseProcessor):

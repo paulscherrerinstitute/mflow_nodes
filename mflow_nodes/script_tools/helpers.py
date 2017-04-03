@@ -1,16 +1,24 @@
 import json
 import logging
+import os
 
 import sys
 
 from mflow_nodes.stream_node import start_stream_node
 
+_logger = logging.getLogger(__name__)
 
-def add_default_arguments(parser, binding_argument=False, default_rest_port=41000):
+MACHINE_FILENAME = "/etc/mflow_nodes.json"
+USER_FILENAME = "~/.mflow_nodes_rc.json"
+PWD_FILENAME = "mflow_nodes.json"
+
+
+def add_default_arguments(parser, binding_argument=False, default_rest_host="0.0.0.0", default_rest_port=41000):
     """
     Adds the arguments every script needs
     :param parser: ArgumentParser instance to add the arguments to.
     :param binding_argument: If True, include the binding address to forward the strem.
+    :param default_rest_host: The default rest host to use. Default: 0.0.0.0
     :param default_rest_port: The default rest port to use. Default: 41000
     """
     parser.add_argument("instance_name", type=str, help="Name of the node instance. Should be unique.")
@@ -21,7 +29,10 @@ def add_default_arguments(parser, binding_argument=False, default_rest_port=4100
                                                               "Example: tcp://127.0.0.1:40001")
     parser.add_argument("--config_file", type=str, default=None, help="Config file with the detector properties.")
     parser.add_argument("--raw", action='store_true', help="Receive and send mflow messages with raw handler.")
-    parser.add_argument("--rest_port", type=int, default=default_rest_port, help="Port for web interface.")
+    parser.add_argument("--rest_host", type=int, default=default_rest_host, help="Host for web interface.\n"
+                                                                                 "Default: %s" % default_rest_host)
+    parser.add_argument("--rest_port", type=int, default=default_rest_port, help="Port for web interface.\n"
+                                                                                 "Default: %s" % default_rest_port)
 
 
 def setup_console_logging(default_level=logging.DEBUG):
@@ -73,6 +84,70 @@ def start_stream_node_helper(processor_instance, input_args, parameters, start_n
                       processor=processor_instance,
                       processor_parameters=processor_parameters,
                       connection_address=input_args.connect_address,
+                      control_host=input_args.rest_host,
                       control_port=input_args.rest_port,
                       receive_raw=input_args.raw,
                       start_node_immediately=start_node_immediately)
+
+
+def load_scripts_config(specified_config_file=None):
+    """
+    Load the scripts config on the current machine.
+    :param specified_config_file: Additional config file, if needed. Otherwise, None.
+    :return: Dictionary with config file.
+    """
+    config = {}
+
+    def load_file(filename):
+        abs_filename = os.path.abspath(os.path.expanduser(filename))
+
+        # If the filename is not specified, None throws an exception, while "" simply return False.
+        if os.access(abs_filename or "", os.R_OK):
+            _logger.debug("Reading scripts config file '%s'." % abs_filename)
+            with open(abs_filename) as file:
+                config.update(json.load(file))
+        else:
+            _logger.debug("Scripts config file not readable: '%s'." % abs_filename)
+
+    # From least to most important config:
+    # Common machine config, user home folder config, current folder config, user specified config.
+    load_file(MACHINE_FILENAME)
+    load_file(USER_FILENAME)
+    load_file(PWD_FILENAME)
+    load_file(specified_config_file)
+
+    if not config:
+        raise ValueError("No config files available. Checked locations:\n'%s',\n'%s',\n'%s',\n'%s'" %
+                         (MACHINE_FILENAME, USER_FILENAME, PWD_FILENAME, specified_config_file or ""))
+
+    return config
+
+
+def get_instance_client_parameters(instance_name, config_file=None):
+    """
+    Return the parameters to construct a REST client.
+    :param instance_name: Name of the instance to address.
+    :param config_file: Additional config file to use.
+    :return: (Instance name, control address)
+    """
+    instance_config = get_instance_config(instance_name, config_file)
+    instance_name = instance_config["instance_name"]
+    control_address = "%s:%s" % (instance_config["rest_host"], instance_config["rest_port"])
+    return instance_name, control_address
+
+
+def get_instance_config(instance_name, config_file=None):
+    """
+    Return the config of the specified instance.
+    :param instance_name: Name of the instance.
+    :param config_file: Additional config file.
+    :return: Dictionary with the instance config.
+    """
+    config = load_scripts_config(config_file)
+
+    instance_config = config.get(instance_name)
+    if not instance_config:
+        raise ValueError("The requested instance '%s' is not defined.\n"
+                         "Available instances: %s" % (instance_name, list(config.keys())))
+
+    return instance_config
