@@ -118,5 +118,18 @@ class NodeClient(object):
         return response["data"]
 
     def kill(self):
-        kill_command_url = self._api_address.format(url="kill")
-        requests.delete(kill_command_url).json()
+        """
+        Kill this process instance.
+        """
+        try:
+            kill_command_url = self._api_address.format(url="kill")
+            requests.delete(kill_command_url).json()
+        except requests.ConnectionError as e:
+            # This exception message is expected when killing the server.
+            # TODO: Fix this, it is only a temporary hack.
+            excepted_message = "('Connection aborted.', RemoteDisconnected(" \
+                            "'Remote end closed connection without response',))"
+            if str(e) != excepted_message:
+                raise
+
+        return "Node killed."
