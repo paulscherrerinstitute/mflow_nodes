@@ -38,7 +38,7 @@ def kill_instance(instance_name, config_file=None):
     """
     address, name = get_instance_client_parameters(instance_name, config_file)
     client = NodeClient(address, name)
-    client.kill()
+    print(client.kill())
 
 
 def list_nodes(config_file=None, verbose=False):
@@ -67,7 +67,7 @@ def start(instance_name, config_file=None):
     """
     address, name = get_instance_client_parameters(instance_name, config_file)
     client = NodeClient(address, name)
-    client.start()
+    print(client.start())
 
 
 def stop(instance_name, config_file=None):
@@ -78,7 +78,7 @@ def stop(instance_name, config_file=None):
     """
     address, name = get_instance_client_parameters(instance_name, config_file)
     client = NodeClient(address, name)
-    client.stop()
+    print(client.stop())
 
 
 def get_client_info(instance_name, config_file=None):
