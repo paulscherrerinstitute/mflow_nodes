@@ -3,6 +3,7 @@ import logging
 import os
 
 import sys
+from collections import OrderedDict
 
 from mflow_nodes.stream_node import start_stream_node
 
@@ -99,6 +100,9 @@ def load_scripts_config(specified_config_file=None):
     config = {}
 
     def load_file(filename):
+        if not filename:
+            return
+
         abs_filename = os.path.abspath(os.path.expanduser(filename))
 
         # If the filename is not specified, None throws an exception, while "" simply return False.
@@ -117,10 +121,10 @@ def load_scripts_config(specified_config_file=None):
     load_file(specified_config_file)
 
     if not config:
-        raise ValueError("No config files available. Checked locations:\n'%s',\n'%s',\n'%s',\n'%s'" %
+        raise ValueError("No config files available. Checked files:\n'%s',\n'%s',\n'%s',\n'%s'" %
                          (MACHINE_FILENAME, USER_FILENAME, PWD_FILENAME, specified_config_file or ""))
 
-    return config
+    return OrderedDict(sorted(config.items()))
 
 
 def get_instance_client_parameters(instance_name, config_file=None):
@@ -131,9 +135,10 @@ def get_instance_client_parameters(instance_name, config_file=None):
     :return: (Instance name, control address)
     """
     instance_config = get_instance_config(instance_name, config_file)
-    instance_name = instance_config["instance_name"]
-    control_address = "%s:%s" % (instance_config["rest_host"], instance_config["rest_port"])
-    return instance_name, control_address
+    instance_name = instance_config["input_args"]["instance_name"]
+    control_address = "%s:%s" % (instance_config["input_args"]["rest_host"],
+                                 instance_config["input_args"]["rest_port"])
+    return control_address, instance_name
 
 
 def get_instance_config(instance_name, config_file=None):
