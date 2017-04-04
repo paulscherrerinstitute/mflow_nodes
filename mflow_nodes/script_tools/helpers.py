@@ -27,7 +27,7 @@ def add_default_arguments(parser, binding_argument=False,
                                                               "Example: tcp://127.0.0.1:40001")
     parser.add_argument("--config_file", type=str, default=None, help="Config file with the detector properties.")
     parser.add_argument("--raw", action='store_true', help="Receive and send mflow messages with raw handler.")
-    parser.add_argument("--rest_host", type=int, default=default_rest_host, help="Host for web interface.\n"
+    parser.add_argument("--rest_host", type=str, default=default_rest_host, help="Host for web interface.\n"
                                                                                  "Default: %s" % default_rest_host)
     parser.add_argument("--rest_port", type=int, default=default_rest_port, help="Port for web interface.\n"
                                                                                  "Default: %s" % default_rest_port)
