@@ -6,7 +6,7 @@ from mflow.tools import ThroughputStatistics
 from mflow_nodes.node_manager import NodeManager
 from mflow_nodes.rest_api.rest_server import start_web_interface
 from mflow_nodes.config import DEFAULT_REST_HOST, DEFAULT_REST_PORT, DEFAULT_CONNECT_ADDRESS, DEFAULT_RECEIVE_TIMEOUT, \
-    DEFAULT_ZMQ_QUEUE_LENGTH, DEFAULT_QUEUE_READ_TIMEOUT
+    DEFAULT_ZMQ_QUEUE_LENGTH, DEFAULT_QUEUE_READ_TIMEOUT, DEFAULT_CLIENT_INSTANCE
 from mflow_nodes.stream_tools.mflow_message import get_mflow_message, get_raw_mflow_message
 
 _logger = getLogger(__name__)
@@ -32,6 +32,11 @@ def start_stream_node(instance_name, processor, processor_parameters=None,
     _logger.debug("Node set to connect to '%s', with control address '%s:%s'." % (connection_address,
                                                                                   control_host,
                                                                                   control_port))
+
+    _logger.debug("To start a client for this instance:\n\t%s"
+                  % DEFAULT_CLIENT_INSTANCE.format(variable_name=instance_name,
+                                                   address="%s:%s" % (control_host, control_port),
+                                                   instance_name=instance_name))
 
     node_manager = NodeManager(processor_function=get_processor_function(processor=processor),
                                receiver_function=get_receiver_function(

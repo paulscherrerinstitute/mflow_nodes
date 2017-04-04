@@ -4,6 +4,7 @@ import subprocess
 from argparse import ArgumentParser, Namespace
 
 from mflow_nodes import NodeClient
+from mflow_nodes.config import DEFAULT_CLIENT_INSTANCE
 from mflow_nodes.script_tools.helpers import load_scripts_config, get_instance_config, get_instance_client_parameters
 
 
@@ -69,7 +70,7 @@ def stop(instance_name, config_file=None):
     client.stop()
 
 
-def client_info(instance_name, config_file=None):
+def get_client_info(instance_name, config_file=None):
     """
     Returns the info needed to instantiate a client.
     :param instance_name: Name of the instance to get the client info.
@@ -77,17 +78,19 @@ def client_info(instance_name, config_file=None):
     :return: String to start a Node Client for the specified instance.
     """
     address, name = get_instance_client_parameters(instance_name, config_file)
-    return '%s = NodeClient(address="%s", instance_name="%s")' % (instance_name, address, name)
+    return DEFAULT_CLIENT_INSTANCE.format(variable_name=instance_name,
+                                          address=address,
+                                          instance_name=name)
 
 
-def client(instance_name, config_file=None):
+def start_client(instance_name, config_file=None):
     """
     Returns the info needed to instantiate a client.
     :param instance_name: Name of the instance to get the client for.
     :param config_file: Additional config file to search for the instance.
     :return: IPython with the node client activated.
     """
-    client_command = client_info(instance_name, config_file)
+    client_command = get_client_info(instance_name, config_file)
     ipython_command = "ipython -i -c '" \
                       "from mflow_nodes import NodeClient;" \
                       "{client_command};" \
@@ -134,9 +137,9 @@ if __name__ == "__main__":
         elif input_args.command == "stop":
             stop(input_args.instance_name, input_args.config_file)
         elif input_args.command == "client-info":
-            print(client_info(input_args.instance_name, input_args.config_file))
+            print(get_client_info(input_args.instance_name, input_args.config_file))
         elif input_args.command == "client":
-            client(input_args.instance_name, input_args.config_file)
+            start_client(input_args.instance_name, input_args.config_file)
         else:
             parser.print_help()
 

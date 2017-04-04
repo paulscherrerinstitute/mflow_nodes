@@ -19,3 +19,6 @@ DEFAULT_ZMQ_QUEUE_LENGTH = 32
 # REST Interface defaults.
 API_PATH_FORMAT = "/api/v1/{instance_name}/{{url}}"
 HTML_PATH_FORMAT = "/{instance_name}/{{url}}"
+
+# Client defaults.
+DEFAULT_CLIENT_INSTANCE = '{variable_name} = NodeClient(address="{address}", instance_name="{instance_name}")'
