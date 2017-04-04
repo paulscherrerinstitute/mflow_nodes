@@ -85,13 +85,18 @@ if __name__ == "__main__":
 
     input_args = parser.parse_args()
 
-    if input_args.command == "list":
-        list_nodes(input_args.config_file, verbose=input_args.verbose)
-    elif input_args.command == "run":
-        run(input_args.instance_name, input_args.config_file)
-    elif input_args.command == "start":
-        start(input_args.instance_name, input_args.config_file)
-    elif input_args.command == "stop":
-        stop(input_args.instance_name, input_args.config_file)
-    else:
-        parser.print_help()
+    try:
+
+        if input_args.command == "list":
+            list_nodes(input_args.config_file, verbose=input_args.verbose)
+        elif input_args.command == "run":
+            run(input_args.instance_name, input_args.config_file)
+        elif input_args.command == "start":
+            start(input_args.instance_name, input_args.config_file)
+        elif input_args.command == "stop":
+            stop(input_args.instance_name, input_args.config_file)
+        else:
+            parser.print_help()
+
+    except ValueError as e:
+        print(e)
