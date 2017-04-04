@@ -1,5 +1,6 @@
 import importlib
 import json
+import subprocess
 from argparse import ArgumentParser, Namespace
 
 from mflow_nodes import NodeClient
@@ -67,6 +68,35 @@ def stop(instance_name, config_file=None):
     client = NodeClient(address, name)
     client.stop()
 
+
+def client_info(instance_name, config_file=None):
+    """
+    Returns the info needed to instantiate a client.
+    :param instance_name: Name of the instance to get the client info.
+    :param config_file: Additional config file to search for the instance.
+    :return: String to start a Node Client for the specified instance.
+    """
+    address, name = get_instance_client_parameters(instance_name, config_file)
+    return '%s = NodeClient(address="%s", instance_name="%s")' % (instance_name, address, name)
+
+
+def client(instance_name, config_file=None):
+    """
+    Returns the info needed to instantiate a client.
+    :param instance_name: Name of the instance to get the client for.
+    :param config_file: Additional config file to search for the instance.
+    :return: IPython with the node client activated.
+    """
+    client_command = client_info(instance_name, config_file)
+    ipython_command = "ipython -i -c '" \
+                      "from mflow_nodes import NodeClient;" \
+                      "{client_command};" \
+                      "print();" \
+                      "print({client_command_string})'".format(client_command=client_command,
+                                                               client_command_string=json.dumps(client_command))
+    subprocess.call(ipython_command, shell=True)
+
+
 if __name__ == "__main__":
 
     parser = ArgumentParser()
@@ -85,6 +115,12 @@ if __name__ == "__main__":
     parser_stop = sub_parsers.add_parser("stop", help="Stop the processor inside a running node.")
     parser_stop.add_argument("instance_name", type=str, help="Name of the instance to stop the processor on.")
 
+    parser_stop = sub_parsers.add_parser("client-info", help="Get client connection parameters.")
+    parser_stop.add_argument("instance_name", type=str, help="Name of the instance to get the info.")
+
+    parser_stop = sub_parsers.add_parser("client", help="Start IPython with the node client.")
+    parser_stop.add_argument("instance_name", type=str, help="Name of the instance to get the client for.")
+
     input_args = parser.parse_args()
 
     try:
@@ -97,6 +133,10 @@ if __name__ == "__main__":
             start(input_args.instance_name, input_args.config_file)
         elif input_args.command == "stop":
             stop(input_args.instance_name, input_args.config_file)
+        elif input_args.command == "client-info":
+            print(client_info(input_args.instance_name, input_args.config_file))
+        elif input_args.command == "client":
+            client(input_args.instance_name, input_args.config_file)
         else:
             parser.print_help()
 
