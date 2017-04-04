@@ -8,7 +8,7 @@ from mflow_nodes.config import DEFAULT_CLIENT_INSTANCE
 from mflow_nodes.script_tools.helpers import load_scripts_config, get_instance_config, get_instance_client_parameters
 
 
-def run(instance_name, config_file=None):
+def run_instance(instance_name, config_file=None):
     """
     Run the node instance.
     :param instance_name: Name of the instance.
@@ -28,6 +28,17 @@ def run(instance_name, config_file=None):
         raise ValueError("Unable to load module '%s'.\n%s" % (module_name, e))
 
     script_module.run(Namespace(**run_arguments), parameters)
+
+
+def kill_instance(instance_name, config_file=None):
+    """
+    Kill a running processor.
+    :param instance_name: Name of the instance to kill.
+    :param config_file: Additional config file to search for the instance.
+    """
+    address, name = get_instance_client_parameters(instance_name, config_file)
+    client = NodeClient(address, name)
+    client.kill()
 
 
 def list_nodes(config_file=None, verbose=False):
@@ -112,6 +123,9 @@ if __name__ == "__main__":
     parser_run = sub_parsers.add_parser("run", help="Run a node instance.")
     parser_run.add_argument("instance_name", type=str, help="Name of the node instance to run from the config.")
 
+    parser_run = sub_parsers.add_parser("kill", help="Kill a node instance.")
+    parser_run.add_argument("instance_name", type=str, help="Name of the node instance to kill.")
+
     parser_start = sub_parsers.add_parser("start", help="Start a processor inside a running node.")
     parser_start.add_argument("instance_name", type=str, help="Name of the instance to start the processor on.")
 
@@ -131,7 +145,9 @@ if __name__ == "__main__":
         if input_args.command == "list":
             list_nodes(input_args.config_file, verbose=input_args.verbose)
         elif input_args.command == "run":
-            run(input_args.instance_name, input_args.config_file)
+            run_instance(input_args.instance_name, input_args.config_file)
+        elif input_args.command == "kill":
+            kill_instance(input_args.instance_name, input_args.config_file)
         elif input_args.command == "start":
             start(input_args.instance_name, input_args.config_file)
         elif input_args.command == "stop":

@@ -99,6 +99,13 @@ def start_web_interface(process, instance_name, host, port):
         return {"status": "ok",
                 "message": "Process stopped."}
 
+    @app.delete(api_path.format(url="kill"))
+    def kill():
+        # Clean up as much as possible.
+        stop()
+        # Bottle does not make it easy to kill it.
+        os._exit(0)
+
     @app.get(html_path.format(url="static/<filename:path>"))
     def get_static(filename):
         return static_file(filename=filename, root=static_root_path)

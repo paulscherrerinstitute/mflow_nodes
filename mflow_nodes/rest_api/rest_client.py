@@ -116,3 +116,7 @@ class NodeClient(object):
             raise ValueError("Cannot get help. Original error:%s\n" % response["message"])
 
         return response["data"]
+
+    def kill(self):
+        kill_command_url = self._api_address.format(url="kill")
+        requests.delete(kill_command_url).json()
