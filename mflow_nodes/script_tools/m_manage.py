@@ -34,13 +34,15 @@ def list_nodes(config_file=None, verbose=False):
     :param config_file: Additional config file to search for the instance.
     :param verbose: Print complete config for each node.
     """
+    if not verbose:
+        print("Instance name (module_to_run):")
+
     for instance_name, instance_config in load_scripts_config(config_file).items():
         if verbose:
             print("Instance name: %s" % instance_name)
             print(json.dumps(instance_config, indent=4))
             print("-" * 60)
         else:
-            print("Instance name (module_to_run):")
             print("\t %s (%s)" % (instance_name, instance_config["module_to_run"]))
 
 
