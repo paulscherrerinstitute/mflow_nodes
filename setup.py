@@ -12,6 +12,7 @@ setup(
     packages=['mflow_nodes',
               'mflow_nodes.processors',
               'mflow_nodes.rest_api',
+              'mflow_nodes.script_tools',
               'mflow_nodes.stream_tools',
               'mflow_nodes.stream_tools.message_handlers',
               'mflow_nodes.test_tools'],
