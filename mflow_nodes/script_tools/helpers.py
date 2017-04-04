@@ -109,7 +109,7 @@ def load_scripts_config(specified_config_file=None):
         if os.access(abs_filename or "", os.R_OK):
             _logger.debug("Reading scripts config file '%s'." % abs_filename)
             with open(abs_filename) as file:
-                config.update(json.load(file))
+                config.update(json.load(file, object_pairs_hook=OrderedDict))
         else:
             _logger.debug("Scripts config file not readable: '%s'." % abs_filename)
 
