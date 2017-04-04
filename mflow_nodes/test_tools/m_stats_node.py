@@ -30,7 +30,7 @@ if __name__ == "__main__":
     setup_console_logging()
 
     parser = ArgumentParser()
-    add_default_arguments(parser, binding_argument=False, default_rest_port=40000)
+    add_default_arguments(parser, binding_argument=False)
     parser.add_argument("--sampling_interval", type=float, default=0.5, help="Stream sampling interval in seconds."
                                                                              "If zero, each message will be measured "
                                                                              "separately.")
