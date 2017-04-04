@@ -5,13 +5,16 @@ from mflow import mflow
 from mflow.tools import ThroughputStatistics
 from mflow_nodes.node_manager import NodeManager
 from mflow_nodes.rest_api.rest_server import start_web_interface
+from mflow_nodes.config import DEFAULT_REST_HOST, DEFAULT_REST_PORT, DEFAULT_CONNECT_ADDRESS, DEFAULT_RECEIVE_TIMEOUT, \
+    DEFAULT_ZMQ_QUEUE_LENGTH, DEFAULT_QUEUE_READ_TIMEOUT
 from mflow_nodes.stream_tools.mflow_message import get_mflow_message, get_raw_mflow_message
 
 _logger = getLogger(__name__)
 
 
 def start_stream_node(instance_name, processor, processor_parameters=None,
-                      connection_address="tcp://127.0.0.1:40000", control_host="0.0.0.0", control_port=8080,
+                      connection_address=DEFAULT_CONNECT_ADDRESS,
+                      control_host=DEFAULT_REST_HOST, control_port=DEFAULT_REST_PORT,
                       start_node_immediately=False, receive_raw=False):
     """
     Start the ZMQ processing node.
@@ -19,8 +22,8 @@ def start_stream_node(instance_name, processor, processor_parameters=None,
     :param processor: Stream mflow_processor that does the actual work on the stream data.
     :type processor: StreamProcessor
     :param connection_address: Fully qualified ZMQ stream connection address. Default: "tcp://127.0.0.1:40000"
-    :param control_host: Binding host for the control REST API. Default: "0.0.0.0"
-    :param control_port: Binding port for the control REST API. Default: 8080
+    :param control_host: Binding host for the control REST API.
+    :param control_port: Binding port for the control REST API.
     :param start_node_immediately: If true, the external mflow_processor will be started at node startup.
     :param processor_parameters: List of arguments to pass to the string mflow_processor start command.
     :param receive_raw: Pass the raw ZMQ messages to the mflow_processor.
@@ -47,12 +50,13 @@ def start_stream_node(instance_name, processor, processor_parameters=None,
                         host=control_host, port=control_port)
 
 
-def get_receiver_function(connection_address, receive_timeout=1000, queue_size=32, receive_raw=False):
+def get_receiver_function(connection_address, receive_timeout=DEFAULT_RECEIVE_TIMEOUT,
+                          queue_size=DEFAULT_ZMQ_QUEUE_LENGTH, receive_raw=False):
     """
     Generate and return the function for running the mflow receiver.
     :param connection_address: Fully qualified ZMQ stream connection address.
-    :param receive_timeout: ZMQ read timeout in milliseconds. Default: 1000.
-    :param queue_size: ZMQ queue size. Default: 32.
+    :param receive_timeout: ZMQ read timeout in milliseconds.
+    :param queue_size: ZMQ queue size.
     :param receive_raw: Read the mflow socket in raw mode. Default: False.
     :return: Function to be executed in an external thread.
     """
@@ -87,12 +91,12 @@ def get_receiver_function(connection_address, receive_timeout=1000, queue_size=3
     return receiver_function
 
 
-def get_processor_function(processor, read_timeout=1000):
+def get_processor_function(processor, read_timeout=DEFAULT_QUEUE_READ_TIMEOUT):
     """
     Generate and return the function for running the processor.
     :param processor: Stream mflow_processor to be used in this instance.
     :type processor: StreamProcessor
-    :param read_timeout: Timeout to read the data queue, in milliseconds. Default: 1000.
+    :param read_timeout: Timeout to read the data queue, in milliseconds.
     :return: Function to be executed in an external thread.
     """
 

@@ -1,7 +1,6 @@
 import importlib
 import json
 from argparse import ArgumentParser, Namespace
-from collections import OrderedDict
 
 from mflow_nodes import NodeClient
 from mflow_nodes.script_tools.helpers import load_scripts_config, get_instance_config, get_instance_client_parameters
@@ -26,7 +25,7 @@ def run(instance_name, config_file=None):
     except ImportError as e:
         raise ValueError("Unable to load module '%s'.\n%s" % (module_name, e))
 
-    script_module.run(Namespace(run_arguments), parameters)
+    script_module.run(Namespace(**run_arguments), parameters)
 
 
 def list_nodes(config_file=None, verbose=False):

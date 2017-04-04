@@ -1,7 +1,7 @@
 import json
 import requests
 
-from mflow_nodes.rest_api.rest_server import API_PATH_FORMAT
+from mflow_nodes.config import API_PATH_FORMAT
 
 
 class NodeClient(object):

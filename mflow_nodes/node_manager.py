@@ -6,6 +6,8 @@ from threading import Event
 from threading import Thread
 
 from mflow.tools import ThroughputStatistics
+
+from mflow_nodes.config import DEFAULT_DATA_QUEUE_LENGTH, DEFAULT_STATISTICS_BUFFER_LENGTH, DEFAULT_STARTUP_TIMEOUT
 from mflow_nodes.rest_api.rest_server import RestInterfacedProcess
 
 _logger = getLogger(__name__)
@@ -17,7 +19,7 @@ class NodeManager(RestInterfacedProcess):
     """
 
     def __init__(self, processor_function, receiver_function, initial_parameters=None, processor_instance=None,
-                 data_queue_size=16):
+                 data_queue_size=DEFAULT_DATA_QUEUE_LENGTH):
         """
         Constructor.
         :param processor_function: Function to run the processor in a thread.
@@ -40,7 +42,7 @@ class NodeManager(RestInterfacedProcess):
 
         self.parameter_queue = Queue()
 
-        self.statistics_buffer = deque(maxlen=100)
+        self.statistics_buffer = deque(maxlen=DEFAULT_STATISTICS_BUFFER_LENGTH)
         self.statistics_namespace = Namespace()
         self.statistics = ThroughputStatistics(self.statistics_buffer, self.statistics_namespace)
 
@@ -66,7 +68,7 @@ class NodeManager(RestInterfacedProcess):
 
         _logger.debug("Starting node.")
 
-        data_queue = Queue(maxsize=16)
+        data_queue = Queue(maxsize=self.data_queue_size)
 
         self.processor_thread = Thread(target=self.processor_function,
                                        args=(self.processor_running, self.statistics_buffer, self.statistics_namespace,
@@ -80,7 +82,8 @@ class NodeManager(RestInterfacedProcess):
         self.receiver_thread.start()
 
         # Both thread need to set the running event. If not, something went wrong.
-        if not (self.receiver_running.wait(5) and self.processor_running.wait(5)):
+        if not (self.receiver_running.wait(DEFAULT_STARTUP_TIMEOUT) and
+                self.processor_running.wait(DEFAULT_STARTUP_TIMEOUT)):
             error = "An exception occurred during the startup."
             _logger.error(error)
             raise ValueError(error)

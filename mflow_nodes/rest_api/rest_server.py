@@ -1,14 +1,14 @@
 import json
 import os
-import bottle
 from collections import OrderedDict
 from logging import getLogger
+
+import bottle
 from bottle import request, run, Bottle, static_file, response
 
-_logger = getLogger(__name__)
+from mflow_nodes.config import API_PATH_FORMAT, HTML_PATH_FORMAT
 
-API_PATH_FORMAT = "/api/v1/{instance_name}/{{url}}"
-HTML_PATH_FORMAT = "/{instance_name}/{{url}}"
+_logger = getLogger(__name__)
 
 
 def start_web_interface(process, instance_name, host, port):
@@ -112,6 +112,7 @@ def start_web_interface(process, instance_name, host, port):
                            "message": str(error.exception)})
 
     try:
+        host = host.replace("http://", "").replace("https://", "")
         run(app=app, host=host, port=port)
     finally:
         # Close the external processor when terminating the web server.

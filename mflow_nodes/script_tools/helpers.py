@@ -1,20 +1,17 @@
 import json
 import logging
 import os
-
 import sys
 from collections import OrderedDict
 
+from mflow_nodes.config import MACHINE_FILENAME, USER_FILENAME, PWD_FILENAME, DEFAULT_REST_HOST, DEFAULT_REST_PORT
 from mflow_nodes.stream_node import start_stream_node
 
 _logger = logging.getLogger(__name__)
 
-MACHINE_FILENAME = "/etc/mflow_nodes.json"
-USER_FILENAME = "~/.mflow_nodes_rc.json"
-PWD_FILENAME = "mflow_nodes.json"
 
-
-def add_default_arguments(parser, binding_argument=False, default_rest_host="0.0.0.0", default_rest_port=41000):
+def add_default_arguments(parser, binding_argument=False,
+                          default_rest_host=DEFAULT_REST_HOST, default_rest_port=DEFAULT_REST_PORT):
     """
     Adds the arguments every script needs
     :param parser: ArgumentParser instance to add the arguments to.
@@ -56,11 +53,11 @@ def construct_processor_parameters(input_args, parameters):
     """
     # Check if the binding address was provided.
     processor_parameters = {}
-    if "binding_address" in input_args:
+    if "binding_address" in input_args and input_args.binding_address:
         processor_parameters["binding_address"] = input_args.binding_address
 
     # Parameters in the config file override all other parameters parameters.
-    if input_args.config_file:
+    if "config_file" in input_args and input_args.config_file:
         with open(input_args.config_file) as config_file:
             processor_parameters.update(json.load(config_file))
 
@@ -81,13 +78,28 @@ def start_stream_node_helper(processor_instance, input_args, parameters, start_n
 
     processor_parameters = construct_processor_parameters(input_args, parameters)
 
+    if "rest_host" in input_args and input_args.rest_host:
+        control_host = input_args.rest_host
+    else:
+        control_host = DEFAULT_REST_HOST
+
+    if "rest_port" in input_args and input_args.rest_port:
+        control_port = input_args.rest_port
+    else:
+        control_port = DEFAULT_REST_PORT
+
+    if "raw" in input_args and input_args.raw:
+        receive_raw = input_args.raw
+    else:
+        receive_raw = DEFAULT_REST_PORT
+
     start_stream_node(instance_name=input_args.instance_name,
                       processor=processor_instance,
                       processor_parameters=processor_parameters,
                       connection_address=input_args.connect_address,
-                      control_host=input_args.rest_host,
-                      control_port=input_args.rest_port,
-                      receive_raw=input_args.raw,
+                      control_host=control_host,
+                      control_port=control_port,
+                      receive_raw=receive_raw,
                       start_node_immediately=start_node_immediately)
 
 
@@ -136,8 +148,8 @@ def get_instance_client_parameters(instance_name, config_file=None):
     """
     instance_config = get_instance_config(instance_name, config_file)
     instance_name = instance_config["input_args"]["instance_name"]
-    control_address = "%s:%s" % (instance_config["input_args"]["rest_host"],
-                                 instance_config["input_args"]["rest_port"])
+    control_address = "%s:%s" % (instance_config["input_args"].get("rest_host", DEFAULT_REST_HOST),
+                                 instance_config["input_args"].get("rest_port", DEFAULT_REST_PORT))
     return control_address, instance_name
 
 

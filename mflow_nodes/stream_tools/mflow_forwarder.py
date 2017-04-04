@@ -1,6 +1,8 @@
 from logging import getLogger
 from mflow import mflow
 
+from mflow_nodes.config import DEFAULT_RECEIVE_TIMEOUT, DEFAULT_ZMQ_QUEUE_LENGTH
+
 
 class MFlowForwarder(object):
     """
@@ -8,7 +10,8 @@ class MFlowForwarder(object):
     """
     _logger = getLogger(__name__)
 
-    def __init__(self, conn_type=mflow.BIND, mode=mflow.PUSH, receive_timeout=1000, queue_size=16):
+    def __init__(self, conn_type=mflow.BIND, mode=mflow.PUSH,
+                 receive_timeout=DEFAULT_RECEIVE_TIMEOUT, queue_size=DEFAULT_ZMQ_QUEUE_LENGTH):
         """
         Constructor.
         :param conn_type: Type of mflow connection to use.
