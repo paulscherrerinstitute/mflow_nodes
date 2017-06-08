@@ -1,7 +1,7 @@
 import json
 import requests
 
-from mflow_nodes.config import API_PATH_FORMAT
+from mflow_nodes import config
 
 
 class NodeClient(object):
@@ -14,7 +14,7 @@ class NodeClient(object):
         :param address: REST Api address of the node. Example: 127.0.0.1:8080
         :param instance_name: Name of the node instance. Example: writer
         """
-        self._api_address = address.rstrip("/") + API_PATH_FORMAT.format(instance_name=instance_name)
+        self._api_address = address.rstrip("/") + config.API_PATH_FORMAT.format(instance_name=instance_name)
 
     def set_parameters(self, parameters):
         """

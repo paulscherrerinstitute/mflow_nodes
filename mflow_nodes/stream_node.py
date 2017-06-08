@@ -5,16 +5,14 @@ from mflow import mflow
 from mflow.tools import ThroughputStatistics
 from mflow_nodes.node_manager import NodeManager
 from mflow_nodes.rest_api.rest_server import start_web_interface
-from mflow_nodes.config import DEFAULT_REST_HOST, DEFAULT_REST_PORT, DEFAULT_CONNECT_ADDRESS, DEFAULT_RECEIVE_TIMEOUT, \
-    DEFAULT_ZMQ_QUEUE_LENGTH, DEFAULT_QUEUE_READ_TIMEOUT, DEFAULT_CLIENT_INSTANCE
+from mflow_nodes import config
 from mflow_nodes.stream_tools.mflow_message import get_mflow_message, get_raw_mflow_message
 
 _logger = getLogger(__name__)
 
 
 def start_stream_node(instance_name, processor, processor_parameters=None,
-                      connection_address=DEFAULT_CONNECT_ADDRESS,
-                      control_host=DEFAULT_REST_HOST, control_port=DEFAULT_REST_PORT,
+                      connection_address=None, control_host=None, control_port=None,
                       start_node_immediately=False, receive_raw=False):
     """
     Start the ZMQ processing node.
@@ -29,14 +27,18 @@ def start_stream_node(instance_name, processor, processor_parameters=None,
     :param receive_raw: Pass the raw ZMQ messages to the mflow_processor.
     :return: None
     """
+    connection_address = connection_address or config.DEFAULT_CONNECT_ADDRESS
+    control_host = control_host or config.DEFAULT_REST_HOST
+    control_port = control_port or config.DEFAULT_REST_PORT
+
     _logger.debug("Node set to connect to '%s', with control address '%s:%s'." % (connection_address,
                                                                                   control_host,
                                                                                   control_port))
 
     _logger.debug("To start a client for this instance:\n\t%s"
-                  % DEFAULT_CLIENT_INSTANCE.format(variable_name=instance_name,
-                                                   address="%s:%s" % (control_host, control_port),
-                                                   instance_name=instance_name))
+                  % config.DEFAULT_CLIENT_INSTANCE.format(variable_name=instance_name,
+                                                          address="%s:%s" % (control_host, control_port),
+                                                          instance_name=instance_name))
 
     node_manager = NodeManager(processor_function=get_processor_function(processor=processor),
                                receiver_function=get_receiver_function(
@@ -55,8 +57,7 @@ def start_stream_node(instance_name, processor, processor_parameters=None,
                         host=control_host, port=control_port)
 
 
-def get_receiver_function(connection_address, receive_timeout=DEFAULT_RECEIVE_TIMEOUT,
-                          queue_size=DEFAULT_ZMQ_QUEUE_LENGTH, receive_raw=False):
+def get_receiver_function(connection_address, receive_timeout=None, queue_size=None, receive_raw=False):
     """
     Generate and return the function for running the mflow receiver.
     :param connection_address: Fully qualified ZMQ stream connection address.
@@ -65,6 +66,8 @@ def get_receiver_function(connection_address, receive_timeout=DEFAULT_RECEIVE_TI
     :param receive_raw: Read the mflow socket in raw mode. Default: False.
     :return: Function to be executed in an external thread.
     """
+    receive_timeout = receive_timeout or config.DEFAULT_RECEIVE_TIMEOUT
+    queue_size = queue_size or config.DEFAULT_ZMQ_QUEUE_LENGTH
 
     def receiver_function(running_event, data_queue):
         try:
@@ -96,7 +99,7 @@ def get_receiver_function(connection_address, receive_timeout=DEFAULT_RECEIVE_TI
     return receiver_function
 
 
-def get_processor_function(processor, read_timeout=DEFAULT_QUEUE_READ_TIMEOUT):
+def get_processor_function(processor, read_timeout=None):
     """
     Generate and return the function for running the processor.
     :param processor: Stream mflow_processor to be used in this instance.
@@ -104,6 +107,7 @@ def get_processor_function(processor, read_timeout=DEFAULT_QUEUE_READ_TIMEOUT):
     :param read_timeout: Timeout to read the data queue, in milliseconds.
     :return: Function to be executed in an external thread.
     """
+    read_timeout = read_timeout or config.DEFAULT_QUEUE_READ_TIMEOUT
 
     def processor_function(running_event, statistics_buffer, statistics_namespace, parameter_queue, data_queue):
         try:

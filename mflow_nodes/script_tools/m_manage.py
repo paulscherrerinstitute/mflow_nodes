@@ -4,7 +4,7 @@ import subprocess
 from argparse import ArgumentParser, Namespace
 
 from mflow_nodes import NodeClient
-from mflow_nodes.config import DEFAULT_CLIENT_INSTANCE
+from mflow_nodes import config
 from mflow_nodes.script_tools.helpers import load_scripts_config, get_instance_config, get_instance_client_parameters
 
 
@@ -89,9 +89,9 @@ def get_client_info(instance_name, config_file=None):
     :return: String to start a Node Client for the specified instance.
     """
     address, name = get_instance_client_parameters(instance_name, config_file)
-    return DEFAULT_CLIENT_INSTANCE.format(variable_name=instance_name,
-                                          address=address,
-                                          instance_name=name)
+    return config.DEFAULT_CLIENT_INSTANCE.format(variable_name=instance_name,
+                                                 address=address,
+                                                 instance_name=name)
 
 
 def start_client(instance_name, config_file=None):

@@ -6,7 +6,7 @@ from logging import getLogger
 import bottle
 from bottle import request, run, Bottle, static_file, response
 
-from mflow_nodes.config import API_PATH_FORMAT, HTML_PATH_FORMAT
+from mflow_nodes import config
 
 _logger = getLogger(__name__)
 
@@ -28,8 +28,8 @@ def start_web_interface(process, instance_name, host, port):
     bottle.TEMPLATE_PATH = [static_root_path]
 
     # Set the URL paths based on the format and instance name.
-    api_path = API_PATH_FORMAT.format(instance_name=instance_name)
-    html_path = HTML_PATH_FORMAT.format(instance_name=instance_name)
+    api_path = config.API_PATH_FORMAT.format(instance_name=instance_name)
+    html_path = config.HTML_PATH_FORMAT.format(instance_name=instance_name)
 
     @app.get("/")
     def redirect_to_index():
