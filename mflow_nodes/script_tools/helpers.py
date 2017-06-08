@@ -4,14 +4,13 @@ import os
 import sys
 from collections import OrderedDict
 
-from mflow_nodes.config import MACHINE_FILENAME, USER_FILENAME, PWD_FILENAME, DEFAULT_REST_HOST, DEFAULT_REST_PORT
+from mflow_nodes import config
 from mflow_nodes.stream_node import start_stream_node
 
 _logger = logging.getLogger(__name__)
 
 
-def add_default_arguments(parser, binding_argument=False,
-                          default_rest_host=DEFAULT_REST_HOST, default_rest_port=DEFAULT_REST_PORT):
+def add_default_arguments(parser, binding_argument=False, default_rest_host=None, default_rest_port=None):
     """
     Adds the arguments every script needs
     :param parser: ArgumentParser instance to add the arguments to.
@@ -19,6 +18,9 @@ def add_default_arguments(parser, binding_argument=False,
     :param default_rest_host: The default rest host to use. Default: 0.0.0.0
     :param default_rest_port: The default rest port to use. Default: 41000
     """
+    default_rest_host = default_rest_host or config.DEFAULT_REST_HOST
+    default_rest_port = default_rest_port or config.DEFAULT_REST_PORT
+
     parser.add_argument("instance_name", type=str, help="Name of the node instance. Should be unique.")
     parser.add_argument("connect_address", type=str, help="Connect address for mflow receiver.\n"
                                                           "Example: tcp://127.0.0.1:40000")
@@ -81,17 +83,17 @@ def start_stream_node_helper(processor_instance, input_args, parameters, start_n
     if "rest_host" in input_args and input_args.rest_host:
         control_host = input_args.rest_host
     else:
-        control_host = DEFAULT_REST_HOST
+        control_host = config.DEFAULT_REST_HOST
 
     if "rest_port" in input_args and input_args.rest_port:
         control_port = input_args.rest_port
     else:
-        control_port = DEFAULT_REST_PORT
+        control_port = config.DEFAULT_REST_PORT
 
     if "raw" in input_args and input_args.raw:
         receive_raw = input_args.raw
     else:
-        receive_raw = DEFAULT_REST_PORT
+        receive_raw = config.DEFAULT_REST_PORT
 
     start_stream_node(instance_name=input_args.instance_name,
                       processor=processor_instance,
@@ -103,6 +105,22 @@ def start_stream_node_helper(processor_instance, input_args, parameters, start_n
                       start_node_immediately=start_node_immediately)
 
 
+def load_config_file(filename):
+    if not filename:
+        return
+
+    abs_filename = os.path.abspath(os.path.expanduser(filename))
+
+    # If the filename is not specified, None throws an exception, while "" simply return False.
+    if os.access(abs_filename or "", os.R_OK):
+        _logger.debug("Reading scripts config file '%s'." % abs_filename)
+        with open(abs_filename) as file:
+
+            return json.load(file, object_pairs_hook=OrderedDict)
+    else:
+        _logger.debug("Scripts config file not readable: '%s'." % abs_filename)
+
+
 def load_scripts_config(specified_config_file=None):
     """
     Load the scripts config on the current machine.
@@ -111,30 +129,17 @@ def load_scripts_config(specified_config_file=None):
     """
     config = {}
 
-    def load_file(filename):
-        if not filename:
-            return
-
-        abs_filename = os.path.abspath(os.path.expanduser(filename))
-
-        # If the filename is not specified, None throws an exception, while "" simply return False.
-        if os.access(abs_filename or "", os.R_OK):
-            _logger.debug("Reading scripts config file '%s'." % abs_filename)
-            with open(abs_filename) as file:
-                config.update(json.load(file, object_pairs_hook=OrderedDict))
-        else:
-            _logger.debug("Scripts config file not readable: '%s'." % abs_filename)
-
     # From least to most important config:
     # Common machine config, user home folder config, current folder config, user specified config.
-    load_file(MACHINE_FILENAME)
-    load_file(USER_FILENAME)
-    load_file(PWD_FILENAME)
-    load_file(specified_config_file)
+    load_config_file(config.MACHINE_FILENAME)
+    load_config_file(config.USER_FILENAME)
+    load_config_file(config.PWD_FILENAME)
+    load_config_file(specified_config_file)
 
     if not config:
         raise ValueError("No config files available. Checked files:\n'%s',\n'%s',\n'%s',\n'%s'" %
-                         (MACHINE_FILENAME, USER_FILENAME, PWD_FILENAME, specified_config_file or ""))
+                         (config.MACHINE_FILENAME, config.USER_FILENAME,
+                          config.PWD_FILENAME, specified_config_file or ""))
 
     return OrderedDict(sorted(config.items()))
 
@@ -148,8 +153,8 @@ def get_instance_client_parameters(instance_name, config_file=None):
     """
     instance_config = get_instance_config(instance_name, config_file)
     instance_name = instance_config["input_args"]["instance_name"]
-    control_address = "%s:%s" % (instance_config["input_args"].get("rest_host", DEFAULT_REST_HOST),
-                                 instance_config["input_args"].get("rest_port", DEFAULT_REST_PORT))
+    control_address = "%s:%s" % (instance_config["input_args"].get("rest_host", config.DEFAULT_REST_HOST),
+                                 instance_config["input_args"].get("rest_port", config.DEFAULT_REST_PORT))
     return control_address, instance_name
 
 
