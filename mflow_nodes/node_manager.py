@@ -7,7 +7,8 @@ from threading import Thread
 
 from mflow.tools import ThroughputStatistics
 
-from mflow_nodes.config import DEFAULT_DATA_QUEUE_LENGTH, DEFAULT_STATISTICS_BUFFER_LENGTH, DEFAULT_STARTUP_TIMEOUT
+from mflow_nodes.config import DEFAULT_DATA_QUEUE_LENGTH, DEFAULT_STATISTICS_BUFFER_LENGTH, DEFAULT_STARTUP_TIMEOUT, \
+    DEFAULT_N_RECEIVING_THREADS
 from mflow_nodes.rest_api.rest_server import RestInterfacedProcess
 
 _logger = getLogger(__name__)
@@ -19,7 +20,7 @@ class NodeManager(RestInterfacedProcess):
     """
 
     def __init__(self, processor_function, receiver_function, initial_parameters=None, processor_instance=None,
-                 data_queue_size=DEFAULT_DATA_QUEUE_LENGTH):
+                 data_queue_size=DEFAULT_DATA_QUEUE_LENGTH, n_receiving_threads=DEFAULT_N_RECEIVING_THREADS):
         """
         Constructor.
         :param processor_function: Function to run the processor in a thread.
@@ -27,17 +28,19 @@ class NodeManager(RestInterfacedProcess):
         :param initial_parameters: Parameters to pass to the function at instantiation.
         :param processor_instance: Instance of the processor (for help and parameters)
         :param data_queue_size: Size of the data queue between the processor and receiver thread.
+        :param n_receiving_threads: Number of receiving threads.
         """
         self.processor_instance = processor_instance
         self.data_queue_size = data_queue_size
         self.current_parameters = initial_parameters or {}
+        self.n_receiving_threads = n_receiving_threads
 
         self.processor_function = processor_function
         self.processor_thread = None
         self.processor_running = Event()
 
         self.receiver_function = receiver_function
-        self.receiver_thread = None
+        self.receiver_threads = []
         self.receiver_running = Event()
 
         self.parameter_queue = Queue()
@@ -57,7 +60,7 @@ class NodeManager(RestInterfacedProcess):
         :return: True if running, otherwise False.
         """
         return (self.processor_thread and self.processor_thread.is_alive() and self.processor_running.is_set()) and \
-               (self.receiver_thread and self.receiver_thread.is_alive() and self.receiver_running.is_set())
+               (all(t and t.is_alive() and t.is_set() for t in self.receiver_threads))
 
     def start(self):
         """
@@ -74,12 +77,16 @@ class NodeManager(RestInterfacedProcess):
                                        args=(self.processor_running, self.statistics_buffer, self.statistics_namespace,
                                              self.parameter_queue, data_queue))
 
-        self.receiver_thread = Thread(target=self.receiver_function,
-                                      args=(self.receiver_running, data_queue))
+        for _ in range(self.n_receiving_threads):
+            self.receiver_threads.append(Thread(target=self.receiver_function,
+                                                args=(self.receiver_running, data_queue)))
 
         self._set_current_parameters()
         self.processor_thread.start()
-        self.receiver_thread.start()
+
+        # Start all redeiving threads.
+        for thread in self.receiver_threads:
+            thread.start()
 
         # Both thread need to set the running event. If not, something went wrong.
         if not (self.receiver_running.wait(DEFAULT_STARTUP_TIMEOUT) and
@@ -97,9 +104,9 @@ class NodeManager(RestInterfacedProcess):
         self.receiver_running.clear()
         self.processor_running.clear()
 
-        if self.receiver_thread is not None:
-            self.receiver_thread.join()
-            self.receiver_thread = None
+        for thread in self.receiver_threads:
+            thread.join()
+        self.receiver_threads.clear()
 
         if self.processor_thread is not None:
             self.processor_thread.join()
