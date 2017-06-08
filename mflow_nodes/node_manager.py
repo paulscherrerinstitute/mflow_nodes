@@ -33,6 +33,8 @@ class NodeManager(RestInterfacedProcess):
         self.current_parameters = initial_parameters or {}
         self.n_receiving_threads = n_receiving_threads or config.DEFAULT_N_RECEIVING_THREADS
 
+        _logger.debug("Using %d receiving threads." % self.n_receiving_threads)
+
         self.processor_function = processor_function
         self.processor_thread = None
         self.processor_running = Event()
