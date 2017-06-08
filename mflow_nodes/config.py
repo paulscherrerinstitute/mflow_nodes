@@ -1,7 +1,7 @@
 # Configuration for the m_manage.py, where to look for config files.
-MACHINE_FILENAME = "/etc/mflow_nodes.json"
-USER_FILENAME = "~/.mflow_nodes_rc.json"
-PWD_FILENAME = "mflow_nodes.json"
+MANAGE_MACHINE_FILENAME = "/etc/mflow_nodes.json"
+MANAGE_USER_FILENAME = "~/.mflow_nodes_rc.json"
+MANAGE_PWD_FILENAME = "mflow_nodes.json"
 
 # Stream node defaults.
 DEFAULT_CONNECT_ADDRESS = "tcp://127.0.0.1:40000"

@@ -107,7 +107,7 @@ def start_stream_node_helper(processor_instance, input_args, parameters, start_n
 
 def load_config_file(filename):
     if not filename:
-        return
+        return {}
 
     abs_filename = os.path.abspath(os.path.expanduser(filename))
 
@@ -115,10 +115,14 @@ def load_config_file(filename):
     if os.access(abs_filename or "", os.R_OK):
         _logger.debug("Reading scripts config file '%s'." % abs_filename)
         with open(abs_filename) as file:
+            file_config = json.load(file, object_pairs_hook=OrderedDict)
+            for instance in file_config.values():
+                instance["config_file"] = filename
 
-            return json.load(file, object_pairs_hook=OrderedDict)
+            return file_config
     else:
         _logger.debug("Scripts config file not readable: '%s'." % abs_filename)
+        return {}
 
 
 def load_scripts_config(specified_config_file=None):
@@ -127,21 +131,21 @@ def load_scripts_config(specified_config_file=None):
     :param specified_config_file: Additional config file, if needed. Otherwise, None.
     :return: Dictionary with config file.
     """
-    config = {}
+    manager_config = {}
 
     # From least to most important config:
     # Common machine config, user home folder config, current folder config, user specified config.
-    load_config_file(config.MACHINE_FILENAME)
-    load_config_file(config.USER_FILENAME)
-    load_config_file(config.PWD_FILENAME)
-    load_config_file(specified_config_file)
+    manager_config.update(load_config_file(config.MANAGE_MACHINE_FILENAME))
+    manager_config.update(load_config_file(config.MANAGE_USER_FILENAME))
+    manager_config.update(load_config_file(config.MANAGE_PWD_FILENAME))
+    manager_config.update(load_config_file(specified_config_file))
 
-    if not config:
+    if not manager_config:
         raise ValueError("No config files available. Checked files:\n'%s',\n'%s',\n'%s',\n'%s'" %
-                         (config.MACHINE_FILENAME, config.USER_FILENAME,
-                          config.PWD_FILENAME, specified_config_file or ""))
+                         (config.MANAGE_MACHINE_FILENAME, config.MANAGE_USER_FILENAME,
+                          config.MANAGE_PWD_FILENAME, specified_config_file or ""))
 
-    return OrderedDict(sorted(config.items()))
+    return OrderedDict(sorted(manager_config.items()))
 
 
 def get_instance_client_parameters(instance_name, config_file=None):
@@ -165,11 +169,11 @@ def get_instance_config(instance_name, config_file=None):
     :param config_file: Additional config file.
     :return: Dictionary with the instance config.
     """
-    config = load_scripts_config(config_file)
+    scripts_config = load_scripts_config(config_file)
 
-    instance_config = config.get(instance_name)
+    instance_config = scripts_config.get(instance_name)
     if not instance_config:
         raise ValueError("The requested instance '%s' is not defined.\n"
-                         "Available instances: %s" % (instance_name, list(config.keys())))
+                         "Available instances: %s" % (instance_name, list(scripts_config.keys())))
 
     return instance_config
