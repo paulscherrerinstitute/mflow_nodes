@@ -6,9 +6,7 @@ from threading import Event
 from threading import Thread
 
 from mflow.tools import ThroughputStatistics
-
-from mflow_nodes.config import DEFAULT_DATA_QUEUE_LENGTH, DEFAULT_STATISTICS_BUFFER_LENGTH, DEFAULT_STARTUP_TIMEOUT, \
-    DEFAULT_N_RECEIVING_THREADS
+from mflow_nodes import config
 from mflow_nodes.rest_api.rest_server import RestInterfacedProcess
 
 _logger = getLogger(__name__)
@@ -20,7 +18,7 @@ class NodeManager(RestInterfacedProcess):
     """
 
     def __init__(self, processor_function, receiver_function, initial_parameters=None, processor_instance=None,
-                 data_queue_size=DEFAULT_DATA_QUEUE_LENGTH, n_receiving_threads=DEFAULT_N_RECEIVING_THREADS):
+                 data_queue_size=None, n_receiving_threads=None):
         """
         Constructor.
         :param processor_function: Function to run the processor in a thread.
@@ -31,9 +29,9 @@ class NodeManager(RestInterfacedProcess):
         :param n_receiving_threads: Number of receiving threads.
         """
         self.processor_instance = processor_instance
-        self.data_queue_size = data_queue_size
+        self.data_queue_size = data_queue_size or config.DEFAULT_DATA_QUEUE_LENGTH
         self.current_parameters = initial_parameters or {}
-        self.n_receiving_threads = n_receiving_threads
+        self.n_receiving_threads = n_receiving_threads or config.DEFAULT_N_RECEIVING_THREADS
 
         self.processor_function = processor_function
         self.processor_thread = None
@@ -41,11 +39,11 @@ class NodeManager(RestInterfacedProcess):
 
         self.receiver_function = receiver_function
         self.receiver_threads = []
-        self.receiver_running = Event()
+        self.receivers_running = [Event()] * self.n_receiving_threads
 
         self.parameter_queue = Queue()
 
-        self.statistics_buffer = deque(maxlen=DEFAULT_STATISTICS_BUFFER_LENGTH)
+        self.statistics_buffer = deque(maxlen=config.DEFAULT_STATISTICS_BUFFER_LENGTH)
         self.statistics_namespace = Namespace()
         self.statistics = ThroughputStatistics(self.statistics_buffer, self.statistics_namespace)
 
@@ -60,7 +58,8 @@ class NodeManager(RestInterfacedProcess):
         :return: True if running, otherwise False.
         """
         return (self.processor_thread and self.processor_thread.is_alive() and self.processor_running.is_set()) and \
-               (all(t and t.is_alive() and t.is_set() for t in self.receiver_threads))
+               (all(thr and thr.is_alive() and running.is_set()
+                    for thr, running in zip(self.receiver_threads, self.receivers_running)))
 
     def start(self):
         """
@@ -77,20 +76,20 @@ class NodeManager(RestInterfacedProcess):
                                        args=(self.processor_running, self.statistics_buffer, self.statistics_namespace,
                                              self.parameter_queue, data_queue))
 
-        for _ in range(self.n_receiving_threads):
+        for index in range(self.n_receiving_threads):
             self.receiver_threads.append(Thread(target=self.receiver_function,
-                                                args=(self.receiver_running, data_queue)))
+                                                args=(self.receivers_running[index], data_queue)))
 
         self._set_current_parameters()
         self.processor_thread.start()
 
-        # Start all redeiving threads.
+        # Start all receiving threads.
         for thread in self.receiver_threads:
             thread.start()
 
         # Both thread need to set the running event. If not, something went wrong.
-        if not (self.receiver_running.wait(DEFAULT_STARTUP_TIMEOUT) and
-                self.processor_running.wait(DEFAULT_STARTUP_TIMEOUT)):
+        if not (self.processor_running.wait(config.DEFAULT_STARTUP_TIMEOUT) and
+                all(running.wait(config.DEFAULT_STARTUP_TIMEOUT) for running in self.receivers_running)):
             error = "An exception occurred during the startup."
             _logger.error(error)
             raise ValueError(error)
@@ -101,7 +100,8 @@ class NodeManager(RestInterfacedProcess):
         """
         _logger.debug("Stopping node.")
 
-        self.receiver_running.clear()
+        for running in self.receivers_running:
+            running.clear()
         self.processor_running.clear()
 
         for thread in self.receiver_threads:
