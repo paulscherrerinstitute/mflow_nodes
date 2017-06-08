@@ -19,6 +19,11 @@ def run_instance(instance_name, config_file=None):
     # Module name and run arguments are mandatory.
     module_name = instance_config["module_to_run"]
     run_arguments = instance_config["input_args"]
+
+    # Setup the number of receiving threads.
+    n_receiving_threads = instance_name.get("n_receiving_threads", config.DEFAULT_N_RECEIVING_THREADS)
+    config.DEFAULT_N_RECEIVING_THREADS = n_receiving_threads
+
     # Parameters are optional.
     parameters = instance_config.get("parameters", {})
 
