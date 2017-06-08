@@ -1,6 +1,6 @@
 package:
     name: mflow_nodes
-    version: 0.0.5
+    version: 1.0.0
 
 build:
   number: 1
