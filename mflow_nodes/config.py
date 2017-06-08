@@ -3,6 +3,10 @@ MANAGE_MACHINE_FILENAME = "/etc/mflow_nodes.json"
 MANAGE_USER_FILENAME = "~/.mflow_nodes_rc.json"
 MANAGE_PWD_FILENAME = "mflow_nodes.json"
 
+LOG_MACHINE_FILENAME = "/etc/mflow_nodes_logging.json"
+LOG_USER_FILENAME = "~/.mflow_nodes_rc_logging.json"
+LOG_PWD_FILENAME = "mflow_nodes_logging.json"
+
 # Stream node defaults.
 DEFAULT_CONNECT_ADDRESS = "tcp://127.0.0.1:40000"
 DEFAULT_REST_HOST = "http://0.0.0.0"

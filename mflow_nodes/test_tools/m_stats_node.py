@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 from mflow.tools import ThroughputStatisticsPrinter
 
 from mflow_nodes.processors.base import BaseProcessor
-from mflow_nodes.script_tools.helpers import setup_console_logging, add_default_arguments, start_stream_node_helper
+from mflow_nodes.script_tools.helpers import setup_logging, add_default_arguments, start_stream_node_helper
 
 
 class StatisticsNode(BaseProcessor):
@@ -27,11 +27,13 @@ def run(input_args, parameters=None):
                              start_node_immediately=True)
 
 if __name__ == "__main__":
-    setup_console_logging()
-
     parser = ArgumentParser()
     add_default_arguments(parser, binding_argument=False)
     parser.add_argument("--sampling_interval", type=float, default=0.5, help="Stream sampling interval in seconds."
                                                                              "If zero, each message will be measured "
                                                                              "separately.")
-    run(parser.parse_args())
+    arguments = parser.parse_args()
+
+    setup_logging(arguments.log_config_file)
+
+    run(arguments)

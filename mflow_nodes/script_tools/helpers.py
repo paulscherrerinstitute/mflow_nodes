@@ -28,6 +28,7 @@ def add_default_arguments(parser, binding_argument=False, default_rest_host=None
         parser.add_argument("binding_address", type=str, help="Binding address for mflow stream forwarding.\n"
                                                               "Example: tcp://127.0.0.1:40001")
     parser.add_argument("--config_file", type=str, default=None, help="Config file with the detector properties.")
+    parser.add_argument("--log_config_file", type=str, default=None, help="Config file for logging.")
     parser.add_argument("--raw", action='store_true', help="Receive and send mflow messages with raw handler.")
     parser.add_argument("--rest_host", type=str, default=default_rest_host, help="Host for web interface.\n"
                                                                                  "Default: %s" % default_rest_host)
@@ -35,14 +36,47 @@ def add_default_arguments(parser, binding_argument=False, default_rest_host=None
                                                                                  "Default: %s" % default_rest_port)
 
 
-def setup_console_logging(default_level=logging.DEBUG):
+def load_logging_config_files(additional_config_file=None):
+    """
+    Load the logging config files.
+    :param additional_config_file: Specify an additional config file, if needed. Default: None.
+    :return: Dictionary with logger config.
+    """
+    config_from_file = {}
+
+    if os.path.exists(config.LOG_MACHINE_FILENAME):
+        config_from_file.update(json.loads(config.LOG_MACHINE_FILENAME, object_pairs_hook=OrderedDict))
+
+    if os.path.exists(config.LOG_USER_FILENAME):
+        config_from_file.update(json.loads(config.LOG_USER_FILENAME, object_pairs_hook=OrderedDict))
+
+    if os.path.exists(config.LOG_PWD_FILENAME):
+        config_from_file.update(json.loads(config.LOG_PWD_FILENAME, object_pairs_hook=OrderedDict))
+
+    if additional_config_file and os.path.exists(additional_config_file):
+        config_from_file.update(json.loads(additional_config_file, object_pairs_hook=OrderedDict))
+
+    return config_from_file
+
+
+def setup_logging(default_level=logging.DEBUG, config_file=None):
     """
     Most common set of logging configuration for debugging.
     :param default_level: Default logging level.
+    :param config_file: Config file to load for the logging.
     """
-    logging.basicConfig(stream=sys.stdout, level=default_level)
-    logging.getLogger("mflow.mflow").setLevel(logging.ERROR)
-    logging.getLogger("ThroughputStatistics").setLevel(logging.ERROR)
+    config_from_file = load_logging_config_files(config_file)
+    if config_from_file:
+        logging.config.dictConfig(config_from_file)
+
+        _logger.debug("Logging config loaded from file.")
+    else:
+        logging.basicConfig(stream=sys.stdout, level=default_level)
+        logging.getLogger("mflow.mflow").setLevel(logging.ERROR)
+        logging.getLogger("ThroughputStatistics").setLevel(logging.ERROR)
+        logging.getLogger("requests").setLevel(logging.ERROR)
+
+        _logger.debug("Logging config file not found. Using defaults.")
 
 
 def construct_processor_parameters(input_args, parameters):
