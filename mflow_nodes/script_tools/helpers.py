@@ -68,7 +68,6 @@ def setup_logging(default_level=logging.DEBUG, config_file=None):
     config_from_file = load_logging_config_files(config_file)
     if config_from_file:
         logging.config.dictConfig(config_from_file)
-
         _logger.debug("Logging config loaded from file.")
     else:
         logging.basicConfig(stream=sys.stdout, level=default_level)
