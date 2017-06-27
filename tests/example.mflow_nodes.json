@@ -7,7 +7,8 @@
        "raw": true,
        "rest_host": "http://0.0.0.0",
        "rest_port": 41000,
-       "sampling_interval": 0.5},
+       "sampling_interval": 0.5,
+       "n_receiving_threads": 1},
    "parameters": {}
    }
 }
