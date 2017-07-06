@@ -28,7 +28,9 @@ def add_default_arguments(parser, binding_argument=False, default_rest_host=None
         parser.add_argument("binding_address", type=str, help="Binding address for mflow stream forwarding.\n"
                                                               "Example: tcp://127.0.0.1:40001")
     parser.add_argument("--config_file", type=str, default=None, help="Config file with the detector properties.")
-    parser.add_argument("--log_config_file", type=str, default=None, help="Config file for logging.")
+    parser.add_argument("--log_level", default=config.DEFAULT_LOGGING_LEVEL,
+                        choices=['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'],
+                        help="Log level to use.")
     parser.add_argument("--raw", action='store_true', help="Receive and send mflow messages with raw handler.")
     parser.add_argument("--rest_host", type=str, default=default_rest_host, help="Host for web interface.\n"
                                                                                  "Default: %s" % default_rest_host)
@@ -59,23 +61,16 @@ def load_logging_config_files(additional_config_file=None):
     return config_from_file
 
 
-def setup_logging(default_level=logging.DEBUG, config_file=None):
+def setup_logging(log_level=logging.DEBUG):
     """
     Most common set of logging configuration for debugging.
-    :param default_level: Default logging level.
-    :param config_file: Config file to load for the logging.
+    :param log_level: Logging level.
     """
-    config_from_file = load_logging_config_files(config_file)
-    if config_from_file:
-        logging.config.dictConfig(config_from_file)
-        _logger.debug("Logging config loaded from file.")
-    else:
-        logging.basicConfig(stream=sys.stdout, level=default_level)
-        logging.getLogger("mflow.mflow").setLevel(logging.ERROR)
-        logging.getLogger("ThroughputStatistics").setLevel(logging.ERROR)
-        logging.getLogger("requests").setLevel(logging.ERROR)
+    logging.basicConfig(stream=sys.stdout, level=log_level)
 
-        _logger.debug("Logging config file not found. Using defaults.")
+    logging.getLogger("mflow.mflow").setLevel(logging.ERROR)
+    logging.getLogger("ThroughputStatistics").setLevel(logging.ERROR)
+    logging.getLogger("requests").setLevel(logging.ERROR)
 
 
 def construct_processor_parameters(input_args, parameters):

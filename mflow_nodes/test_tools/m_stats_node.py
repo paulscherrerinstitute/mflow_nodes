@@ -34,6 +34,6 @@ if __name__ == "__main__":
                                                                              "separately.")
     arguments = parser.parse_args()
 
-    setup_logging(arguments.log_config_file)
+    setup_logging(arguments.log_level)
 
     run(arguments)
