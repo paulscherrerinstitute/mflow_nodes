@@ -15,6 +15,14 @@ DEFAULT_DATA_QUEUE_LENGTH = 16
 DEFAULT_N_RECEIVING_THREADS = 1
 DEFAULT_STATISTICS_BUFFER_LENGTH = 100
 DEFAULT_STARTUP_TIMEOUT = 5
+# Default logging level
+DEFAULT_LOGGING_LEVEL = "DEBUG"
+# How much time we allow for the processor to shut down, before we terminate it.
+DEFAULT_SHUTDOWN_TIMEOUT = 5
+# Time it takes for the multiprocess exchange to happen.
+DEFAULT_IPC_TIMEOUT = 2
+# Time to use for polling the ipc communication.
+DEFAULT_IPC_POLL_TIMEOUT = 0.5
 
 # Node thread defaults.
 DEFAULT_RECEIVE_TIMEOUT = 1000
