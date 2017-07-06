@@ -4,6 +4,7 @@ from collections import OrderedDict
 from logging import getLogger
 
 import bottle
+import time
 from bottle import request, run, Bottle, static_file, response
 
 from mflow_nodes import config
@@ -123,6 +124,10 @@ def start_web_interface(process, instance_name, host, port):
         run(app=app, host=host, port=port)
     finally:
         # Close the external processor when terminating the web server.
+
+        # Wait for the external process poll timeout.
+        time.sleep(config.DEFAULT_IPC_POLL_TIMEOUT * 2)
+
         process.stop()
 
 

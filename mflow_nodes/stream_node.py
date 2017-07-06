@@ -3,7 +3,7 @@ from queue import Empty
 
 from mflow import mflow
 from mflow.tools import ThroughputStatistics
-from mflow_nodes.node_manager import NodeManager
+from mflow_nodes.node_manager import NodeManager, NodeManagerProxy
 from mflow_nodes.rest_api.rest_server import start_web_interface
 from mflow_nodes import config
 from mflow_nodes.stream_tools.mflow_message import get_mflow_message, get_raw_mflow_message
@@ -46,6 +46,8 @@ def start_stream_node(instance_name, processor, processor_parameters=None,
                                    receive_raw=receive_raw),
                                initial_parameters=processor_parameters,
                                processor_instance=processor)
+
+    # node_manager_proxy = NodeManagerProxy(node_manager)
 
     if start_node_immediately:
         # We on purpose do not catch the possible exceptions here.
