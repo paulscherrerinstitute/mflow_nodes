@@ -23,6 +23,9 @@ def run(input_args, parameters=None):
     if input_args.sampling_interval < 0:
         raise ValueError("Sampling interval cannot be less than zero.")
 
+    # The stats node should always auto_start.
+    input_args.auto_start = True
+
     start_stream_node_helper(StatisticsNode(input_args.sampling_interval), input_args, parameters)
 
 if __name__ == "__main__":
