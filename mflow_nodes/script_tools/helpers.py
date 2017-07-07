@@ -36,6 +36,7 @@ def add_default_arguments(parser, binding_argument=False, default_rest_host=None
                                                                                  "Default: %s" % default_rest_host)
     parser.add_argument("--rest_port", type=int, default=default_rest_port, help="Port for web interface.\n"
                                                                                  "Default: %s" % default_rest_port)
+    parser.add_argument("--auto_start", action='store_true', default=False, help="Start the processor automatically.")
 
 
 def load_logging_config_files(additional_config_file=None):
@@ -97,7 +98,7 @@ def construct_processor_parameters(input_args, parameters):
     return processor_parameters
 
 
-def start_stream_node_helper(processor_instance, input_args, parameters, start_node_immediately=False):
+def start_stream_node_helper(processor_instance, input_args, parameters):
     """
     Run the sream node by extracting common arguments from the ArgumentParser created namespace.
     :param processor_instance: Processor instance to pass to the stream node.
@@ -122,6 +123,8 @@ def start_stream_node_helper(processor_instance, input_args, parameters, start_n
         receive_raw = input_args.raw
     else:
         receive_raw = config.DEFAULT_REST_PORT
+
+    start_node_immediately = "auto_start" in input_args and input_args.auto_start
 
     start_stream_node(instance_name=input_args.instance_name,
                       processor=processor_instance,

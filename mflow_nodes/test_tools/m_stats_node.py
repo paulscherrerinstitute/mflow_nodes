@@ -23,8 +23,7 @@ def run(input_args, parameters=None):
     if input_args.sampling_interval < 0:
         raise ValueError("Sampling interval cannot be less than zero.")
 
-    start_stream_node_helper(StatisticsNode(input_args.sampling_interval), input_args, parameters,
-                             start_node_immediately=True)
+    start_stream_node_helper(StatisticsNode(input_args.sampling_interval), input_args, parameters)
 
 if __name__ == "__main__":
     parser = ArgumentParser()
