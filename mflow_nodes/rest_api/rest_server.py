@@ -111,13 +111,13 @@ def start_web_interface(process, instance_name, host, port):
     def get_static(filename):
         return static_file(filename=filename, root=static_root_path)
 
-    @app.error(500)
-    def error_handler_500(error):
-        response.content_type = 'application/json'
-        response.status = 200
-
-        return json.dumps({"status": "error",
-                           "message": str(error.exception)})
+    # @app.error(500)
+    # def error_handler_500(error):
+    #     response.content_type = 'application/json'
+    #     response.status = 200
+    #
+    #     return json.dumps({"status": "error",
+    #                        "message": str(error.exception)})
 
     try:
         host = host.replace("http://", "").replace("https://", "")
