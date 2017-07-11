@@ -66,6 +66,8 @@ can omit the already set parameters.
 - **api/[api_version]/[instance_name]/help** [GET]: Get the processor documentation.
 - **api/[api_version]/[instance_name]/statistics** [GET]: Get the processor statistics.
 - **api/[api_version]/[instance_name]/statistics_raw** [GET]: Get the processor statistics events.
+- **api/[api_version]/[instance_name]/logging** [GET]: Get the configured loggers and their level.
+- **api/[api_version]/[instance_name]/logging** [POST]: Set the specified logger level.
 
 All endpoints respond with JSONs objects. The endpoints that accept parameters do so in JSON format as well.
 
@@ -97,6 +99,12 @@ curl -X PUT 0.0.0.0:8080/api/v1/stats/;
 
 # Set processor parameters (in this case, we update or set only the value of one parameter):
 curl -H "Content-Type: application/json" -X POST -d '{"parameter_name":"parameter_value"}' 0.0.0.0:8080/api/v1/base/parameters;
+
+# Get the current loggers configuration.
+curl 0.0.0.0:8080/api/v1/stats/logging;
+
+# Set the logging level for the desired processor.
+curl -H "Content-Type: application/json" -X POST -d '{"mflow_nodes.node_manager":"DEBUG"}' 0.0.0.0:8080/api/v1/base/logging;
 
 # Get processor parameters.
 curl 0.0.0.0:8080/api/v1/stats/parameters;
