@@ -105,6 +105,35 @@ class NodeClient(object):
 
         return response["data"]
 
+    def get_log_level(self):
+        """
+        Get log levels.
+        :return: Response data.
+        """
+        log_command_url = self._api_address.format(url="logging")
+        response = requests.get(log_command_url).json()
+        if response["status"] != "ok":
+            raise ValueError("Cannot get log levels. Original error:%s\n" % response["message"])
+
+        return response["data"]
+
+    def set_log_level(self, parameters):
+        """
+        Set parameters on the node.
+        :param parameters: Parameters set the logs to: {"logger_name": "level"}.
+        :return: Response message.
+        """
+        headers = {'content-type': 'application/json'}
+        set_log_url = self._api_address.format(url="logging")
+        response = requests.post(set_log_url,
+                                 data=json.dumps(parameters),
+                                 headers=headers).json()
+
+        if response["status"] != "ok":
+            raise ValueError("Cannot set log levels. Original error:%s\n" % response["message"])
+
+        return response["message"]
+
     def get_help(self):
         """
         Get node help.

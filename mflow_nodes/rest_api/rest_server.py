@@ -1,7 +1,7 @@
 import json
 import os
 from collections import OrderedDict
-from logging import getLogger
+from logging import getLogger, Logger, getLevelName
 
 import bottle
 import time
@@ -79,6 +79,27 @@ def start_web_interface(process, instance_name, host, port):
         return {"status": "ok",
                 "message": "Parameters set successfully."}
 
+    @app.get(api_path.format(url="logging"))
+    def get_log_level():
+        loggers = Logger.manager.loggerDict
+
+        data = {}
+        for logger_name, logger in loggers.items():
+            if isinstance(logger, Logger):
+                data[logger_name] = getLevelName(logger.level)
+
+        return {"status:": "ok",
+                "message": "List of current loggers.",
+                "data": data}
+
+    @app.post(api_path.format(url="logging"))
+    def set_log_level():
+        for name, value in request.json.items():
+            getLogger(name).setLevel(value)
+
+        return {"status": "ok",
+                "message": "Parameters set."}
+
     @app.put(api_path.format(url=""))
     @app.get(api_path.format(url="start"))
     def start():
@@ -111,13 +132,13 @@ def start_web_interface(process, instance_name, host, port):
     def get_static(filename):
         return static_file(filename=filename, root=static_root_path)
 
-    # @app.error(500)
-    # def error_handler_500(error):
-    #     response.content_type = 'application/json'
-    #     response.status = 200
-    #
-    #     return json.dumps({"status": "error",
-    #                        "message": str(error.exception)})
+    @app.error(500)
+    def error_handler_500(error):
+        response.content_type = 'application/json'
+        response.status = 500
+
+        return json.dumps({"status": "error",
+                           "message": str(error.exception)})
 
     try:
         host = host.replace("http://", "").replace("https://", "")
