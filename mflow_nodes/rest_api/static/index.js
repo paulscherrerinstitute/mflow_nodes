@@ -10,9 +10,9 @@ var NotificationClient = (function(){
         $.notify(message, "warn");
     };
 
-    self.error = function(message){
-        console.error(message);
-        $.notify(message, "error");
+    self.error = function(response){
+        console.error(response.message);
+        $.notify(response.message, "error");
     };
 
     return self;
@@ -49,7 +49,7 @@ var APIClient = (function(instance_name){
                     verify_response(response, callback_function);
                 },
                 error: function(response){
-                    NotificationClient.error(response.message);
+                    NotificationClient.error(JSON.parse(response.responseText));
                 }
             });
         }
