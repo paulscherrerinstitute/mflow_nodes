@@ -1,6 +1,7 @@
 from logging import getLogger
 from queue import Empty
 
+import os
 from mflow import mflow
 from mflow.tools import ThroughputStatistics
 from mflow_nodes.node_manager import NodeManager, NodeManagerProxy
@@ -111,11 +112,20 @@ def get_processor_function(processor, read_timeout=None):
     """
     read_timeout = read_timeout or config.DEFAULT_QUEUE_READ_TIMEOUT
 
+    def set_parameter(parameter_to_set):
+        if parameter_to_set[0] == config.PROCESS_UID_PARAMETER:
+            os.setuid(parameter_to_set[1])
+
+        elif parameter_to_set[0] == config.PROCESS_GID_PARAMETER:
+            os.setgid(parameter_to_set[1])
+        else:
+            processor.set_parameter()
+
     def processor_function(running_event, statistics_buffer, statistics_namespace, parameter_queue, data_queue):
         try:
             # Pass all the queued parameters before starting the mflow_processor.
             while not parameter_queue.empty():
-                processor.set_parameter(parameter_queue.get())
+                set_parameter(parameter_queue.get())
 
             statistics = ThroughputStatistics(statistics_buffer, statistics_namespace)
 
@@ -137,7 +147,7 @@ def get_processor_function(processor, read_timeout=None):
 
                 # If available, pass parameters to the mflow_processor.
                 while not parameter_queue.empty():
-                    processor.set_parameter(parameter_queue.get())
+                    set_parameter(parameter_queue.get())
 
             # Save the last statistics events even if the sampling interval was not reached.
             statistics.flush()

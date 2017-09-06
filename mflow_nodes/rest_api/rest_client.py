@@ -33,6 +33,26 @@ class NodeClient(object):
 
         return response["message"]
 
+    def set_process_user(self, uid=None, gid=None):
+        """
+        Set the user the writer process should run under.
+        :param uid: User id.
+        :param gid: Group id.
+        :return: Response from the server.
+        """
+        parameters = {}
+
+        if uid is not None:
+            parameters[config.PROCESS_UID_PARAMETER] = uid
+
+        if gid is not None:
+            parameters[config.PROCESS_GID_PARAMETER] = gid
+
+        if parameters:
+            return self.set_parameters()
+
+        raise ValueError("UID and/or GID must be specified.")
+
     def start(self):
         """
         Start the node.

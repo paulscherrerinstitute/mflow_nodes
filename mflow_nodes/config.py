@@ -35,3 +35,7 @@ HTML_PATH_FORMAT = "/{instance_name}/{{url}}"
 
 # Client defaults.
 DEFAULT_CLIENT_INSTANCE = '{variable_name} = NodeClient(address="{address}", instance_name="{instance_name}")'
+
+# Process uid and gid parameters
+PROCESS_UID_PARAMETER = "process_uid"
+PROCESS_GID_PARAMETER = "process_gid"
