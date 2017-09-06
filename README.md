@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/datastreaming/mflow_nodes.svg?branch=master)](https://travis-ci.org/datastreaming/mflow_nodes) [![Build status](https://ci.appveyor.com/api/projects/status/dtao0m1po1eqw1ba?svg=true)](https://ci.appveyor.com/project/Babicaa/mflow_nodes)
+
 # mflow nodes
 An mflow node is network node operating on an mflow stream.
 
