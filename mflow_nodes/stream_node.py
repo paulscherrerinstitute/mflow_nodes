@@ -118,8 +118,8 @@ def get_processor_function(processor, read_timeout=None):
 
         elif parameter_to_set[0] == config.PROCESS_GID_PARAMETER:
             os.setgid(parameter_to_set[1])
-        else:
-            processor.set_parameter()
+
+        processor.set_parameter(parameter_to_set)
 
     def processor_function(running_event, statistics_buffer, statistics_namespace, parameter_queue, data_queue):
         try:

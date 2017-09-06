@@ -49,7 +49,7 @@ class NodeClient(object):
             parameters[config.PROCESS_GID_PARAMETER] = gid
 
         if parameters:
-            return self.set_parameters()
+            return self.set_parameters(parameters)
 
         raise ValueError("UID and/or GID must be specified.")
 
