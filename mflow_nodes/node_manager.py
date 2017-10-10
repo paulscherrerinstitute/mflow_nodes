@@ -124,6 +124,9 @@ class NodeManager(RestInterfacedProcess):
         :param parameter: Tuple of (parameter_name, parameter_value).
         :return: None.
         """
+        if not isinstance(parameter, tuple) or len(parameter) != 2:
+            raise ValueError("Invalid parameter to set. Expected tuple of length 2, but received '%s.'" % parameter)
+
         self.current_parameters[parameter[0]] = parameter[1]
         self.parameter_queue.put(parameter)
 
@@ -172,6 +175,7 @@ def external_process_wrapper(node_manager, communication_pipe, stop_event):
 
             ipc_return = {"call_id": ipc_call["call_id"],
                           "return": method_return}
+
             communication_pipe.send(ipc_return)
 
     except KeyboardInterrupt:
@@ -253,6 +257,8 @@ class NodeManagerProxy(object):
         # Discard any messages from the previous exchange.
         while self.communication_pipe.poll():
             self.communication_pipe.recv()
+
+        _logger.debug("Executing method '%s' with args '%s' and kwargs '%s'.", method_name, args, kwargs)
 
         call_id = uuid.uuid4()
         ipc_call = {"call_id": call_id,

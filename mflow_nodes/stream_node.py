@@ -113,6 +113,10 @@ def get_processor_function(processor, read_timeout=None):
     read_timeout = read_timeout or config.DEFAULT_QUEUE_READ_TIMEOUT
 
     def set_parameter(parameter_to_set):
+        if not isinstance(parameter_to_set, tuple) or len(parameter_to_set) != 2:
+            raise ValueError("Invalid parameter to set. Expected tuple of length 2, but received %s."
+                             % parameter_to_set)
+
         if parameter_to_set[0] == config.PROCESS_UID_PARAMETER:
             os.setuid(parameter_to_set[1])
 

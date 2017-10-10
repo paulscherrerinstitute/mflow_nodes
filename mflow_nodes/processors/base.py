@@ -28,6 +28,7 @@ class BaseProcessor(object):
         :param parameter: Tuple of format (parameter_name, parameter_value).
         :return: None
         """
+
         # Parameters can only be received in tuple format: (parameter_name, parameter_value)
         if not isinstance(parameter, tuple):
             error = "Received parameter '%s' value is not in tuple format. " \
