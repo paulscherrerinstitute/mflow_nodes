@@ -125,7 +125,7 @@ class NodeManager(RestInterfacedProcess):
         :return: None.
         """
         if not isinstance(parameter, tuple) or len(parameter) != 2:
-            raise ValueError("Invalid parameter to set. Expected tuple of length 2, but received '%s.'" % parameter)
+            raise ValueError("Invalid parameter to set. Expected tuple of length 2, but received '%s'." % parameter)
 
         self.current_parameters[parameter[0]] = parameter[1]
         self.parameter_queue.put(parameter)
