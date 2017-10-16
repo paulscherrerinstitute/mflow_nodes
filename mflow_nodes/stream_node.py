@@ -117,11 +117,16 @@ def get_processor_function(processor, read_timeout=None):
             raise ValueError("Invalid parameter to set. Expected tuple of length 2, but received %s."
                              % parameter_to_set)
 
+        # TODO: First set the gid and then the process id.
+
         if parameter_to_set[0] == config.PROCESS_UID_PARAMETER:
+            _logger.debug("Setting process UID to '%s'.", parameter_to_set[1])
+            os.setgid(parameter_to_set[1])
             os.setuid(parameter_to_set[1])
 
-        elif parameter_to_set[0] == config.PROCESS_GID_PARAMETER:
-            os.setgid(parameter_to_set[1])
+        # elif parameter_to_set[0] == config.PROCESS_GID_PARAMETER:
+        #     _logger.debug("Setting process GID to '%s'.", parameter_to_set[1])
+
 
         processor.set_parameter(parameter_to_set)
 
