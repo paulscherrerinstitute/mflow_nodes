@@ -3,7 +3,7 @@ from logging import getLogger
 import os
 from time import sleep
 
-from mflow import mflow
+from mflow import mflow, Stream, zmq
 from mflow.tools import ThroughputStatistics
 from mflow_nodes.node_manager import NodeManager, NodeManagerProxy
 from mflow_nodes.rest_api.rest_server import start_web_interface
@@ -75,12 +75,17 @@ def get_receiver_function(connection_address, receive_timeout=None, queue_size=N
 
     def receiver_function(running_event, data_queue):
         try:
+
             # Setup the ZMQ listener and the stream mflow_processor.
-            stream = mflow.connect(address=connection_address,
-                                   conn_type=mflow.CONNECT,
-                                   mode=mflow.PULL,
-                                   receive_timeout=receive_timeout,
-                                   queue_size=queue_size)
+            context = zmq.Context(io_threads=config.ZMQ_IO_THREADS)
+
+            stream = Stream()
+            stream.connect(address=connection_address,
+                           conn_type=mflow.CONNECT,
+                           mode=mflow.PULL,
+                           receive_timeout=receive_timeout,
+                           queue_size=queue_size,
+                           context=context)
 
             # Setup the receive and converter function according to the raw parameter.
             receive_function = stream.receive_raw if receive_raw else stream.receive
