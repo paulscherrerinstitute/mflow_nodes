@@ -76,7 +76,7 @@ class NodeManager(RestInterfacedProcess):
 
         _logger.debug("Starting node.")
 
-        data_queue = Queue(maxsize=self.data_queue_size)
+        data_queue = deque(maxlen=self.data_queue_size)
 
         self.processor_thread = Thread(target=self.processor_function,
                                        args=(self.processor_running, self.statistics_buffer, self.statistics_namespace,

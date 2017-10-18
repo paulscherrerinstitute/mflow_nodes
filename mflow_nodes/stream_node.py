@@ -1,7 +1,8 @@
 from logging import getLogger
-from queue import Empty
 
 import os
+from time import sleep
+
 from mflow import mflow
 from mflow.tools import ThroughputStatistics
 from mflow_nodes.node_manager import NodeManager, NodeManagerProxy
@@ -92,7 +93,7 @@ def get_receiver_function(connection_address, receive_timeout=None, queue_size=N
 
                 # Process only valid messages.
                 if message is not None:
-                    data_queue.put(message, timeout=receive_timeout)
+                    data_queue.append(message)
 
             stream.disconnect()
         except Exception as e:
@@ -102,15 +103,15 @@ def get_receiver_function(connection_address, receive_timeout=None, queue_size=N
     return receiver_function
 
 
-def get_processor_function(processor, read_timeout=None):
+def get_processor_function(processor, queue_read_timeout=None):
     """
     Generate and return the function for running the processor.
     :param processor: Stream mflow_processor to be used in this instance.
     :type processor: StreamProcessor
-    :param read_timeout: Timeout to read the data queue, in milliseconds.
+    :param queue_read_timeout: Timeout to read the data from queue, in seconds.
     :return: Function to be executed in an external thread.
     """
-    read_timeout = read_timeout or config.DEFAULT_QUEUE_READ_TIMEOUT
+    queue_read_timeout = queue_read_timeout or config.DEFAULT_QUEUE_READ_INTERVAL
 
     def set_parameter(parameter_to_set):
         if not isinstance(parameter_to_set, tuple) or len(parameter_to_set) != 2:
@@ -127,7 +128,6 @@ def get_processor_function(processor, read_timeout=None):
         # elif parameter_to_set[0] == config.PROCESS_GID_PARAMETER:
         #     _logger.debug("Setting process GID to '%s'.", parameter_to_set[1])
 
-
         processor.set_parameter(parameter_to_set)
 
     def processor_function(running_event, statistics_buffer, statistics_namespace, parameter_queue, data_queue):
@@ -140,19 +140,15 @@ def get_processor_function(processor, read_timeout=None):
 
             processor.start()
 
-            # Queue accepts the timeout in seconds, but zmq accepts milliseconds.
-            # We are trying to have a common (millisecond) value for timeouts.
-            queue_timeout = read_timeout / 1000
-
             # The running event is used to signal that the processor has successfully started.
             running_event.set()
             while running_event.is_set():
                 try:
-                    message = data_queue.get(timeout=queue_timeout)
+                    message = data_queue.popleft()
                     processor.process_message(message)
                     statistics.save_statistics(message.get_statistics())
-                except Empty:
-                    pass
+                except IndexError:
+                    sleep(queue_read_timeout)
 
                 # If available, pass parameters to the mflow_processor.
                 while not parameter_queue.empty():
