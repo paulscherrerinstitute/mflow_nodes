@@ -62,10 +62,11 @@ class NodeManager(RestInterfacedProcess):
         Return the status of the process function (running or not).
         :return: True if running, otherwise False.
         """
-        return (
-                   self.processor_thread is not None and self.processor_thread.is_alive() and self.processor_running.is_set()) and \
-               (all(thr and thr.is_alive() and running.is_set()
-                    for thr, running in zip(self.receiver_threads, self.receivers_running)))
+        return (self.processor_thread is not None and self.processor_thread.is_alive()
+                and self.processor_running.is_set())
+        # and (all(thr and thr.is_alive() and running.is_set()
+        #      for thr, running in zip(self.receiver_threads, self.receivers_running))
+        #      )
 
     def start(self):
         """
@@ -82,20 +83,20 @@ class NodeManager(RestInterfacedProcess):
                                        args=(self.processor_running, self.statistics_buffer, self.statistics_namespace,
                                              self.parameter_queue, data_queue))
 
-        for index in range(self.n_receiving_threads):
-            self.receiver_threads.append(Thread(target=self.receiver_function,
-                                                args=(self.receivers_running[index], data_queue)))
+        # for index in range(self.n_receiving_threads):
+        #     self.receiver_threads.append(Thread(target=self.receiver_function,
+        #                                         args=(self.receivers_running[index], data_queue)))
 
         self._set_current_parameters()
         self.processor_thread.start()
 
         # Start all receiving threads.
-        for thread in self.receiver_threads:
-            thread.start()
+        # for thread in self.receiver_threads:
+        #     thread.start()
 
         # Both thread need to set the running event. If not, something went wrong.
-        if not (self.processor_running.wait(config.DEFAULT_STARTUP_TIMEOUT) and
-                    all(running.wait(config.DEFAULT_STARTUP_TIMEOUT) for running in self.receivers_running)):
+        if not self.processor_running.wait(config.DEFAULT_STARTUP_TIMEOUT):
+                    # and all(running.wait(config.DEFAULT_STARTUP_TIMEOUT) for running in self.receivers_running)):
             error = "An exception occurred during the startup."
             _logger.error(error)
             raise ValueError(error)
@@ -110,9 +111,9 @@ class NodeManager(RestInterfacedProcess):
             running.clear()
         self.processor_running.clear()
 
-        for thread in self.receiver_threads:
-            thread.join()
-        self.receiver_threads.clear()
+        # for thread in self.receiver_threads:
+        #     thread.join()
+        # self.receiver_threads.clear()
 
         if self.processor_thread is not None:
             self.processor_thread.join()

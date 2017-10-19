@@ -42,7 +42,9 @@ def start_stream_node(instance_name, processor, processor_parameters=None,
                                                           address="%s:%s" % (control_host, control_port),
                                                           instance_name=instance_name))
 
-    node_manager = NodeManager(processor_function=get_processor_function(processor=processor),
+    node_manager = NodeManager(processor_function=get_processor_function(processor=processor,
+                                                                         connection_address=connection_address,
+                                                                         receive_raw=receive_raw),
                                receiver_function=get_receiver_function(
                                    connection_address=connection_address,
                                    receive_raw=receive_raw),
@@ -108,15 +110,9 @@ def get_receiver_function(connection_address, receive_timeout=None, queue_size=N
     return receiver_function
 
 
-def get_processor_function(processor, queue_read_timeout=None):
-    """
-    Generate and return the function for running the processor.
-    :param processor: Stream mflow_processor to be used in this instance.
-    :type processor: StreamProcessor
-    :param queue_read_timeout: Timeout to read the data from queue, in seconds.
-    :return: Function to be executed in an external thread.
-    """
-    queue_read_timeout = queue_read_timeout or config.DEFAULT_QUEUE_READ_INTERVAL
+def get_processor_function(processor, connection_address, receive_timeout=None, queue_size=None, receive_raw=False):
+    receive_timeout = receive_timeout or config.DEFAULT_RECEIVE_TIMEOUT
+    queue_size = queue_size or config.DEFAULT_ZMQ_QUEUE_LENGTH
 
     def set_parameter(parameter_to_set):
         if not isinstance(parameter_to_set, tuple) or len(parameter_to_set) != 2:
@@ -142,26 +138,47 @@ def get_processor_function(processor, queue_read_timeout=None):
                 set_parameter(parameter_queue.get())
 
             statistics = ThroughputStatistics(statistics_buffer, statistics_namespace)
-
             processor.start()
 
-            # The running event is used to signal that the processor has successfully started.
-            running_event.set()
-            while running_event.is_set():
-                try:
-                    message = data_queue.popleft()
-                    processor.process_message(message)
-                    statistics.save_statistics(message.get_statistics())
-                except IndexError:
-                    sleep(queue_read_timeout)
+            try:
+                # Setup the ZMQ listener and the stream mflow_processor.
+                context = zmq.Context(io_threads=config.ZMQ_IO_THREADS)
 
-                # If available, pass parameters to the mflow_processor.
-                while not parameter_queue.empty():
-                    set_parameter(parameter_queue.get())
+                stream = Stream()
+                stream.connect(address=connection_address,
+                               conn_type=mflow.CONNECT,
+                               mode=mflow.PULL,
+                               receive_timeout=receive_timeout,
+                               queue_size=queue_size,
+                               context=context)
+
+                # Setup the receive and converter function according to the raw parameter.
+                receive_function = stream.receive_raw if receive_raw else stream.receive
+                mflow_message_function = get_raw_mflow_message if receive_raw else get_mflow_message
+
+                # The running event is used to signal that mflow has successfully started.
+                running_event.set()
+                while running_event.is_set():
+                    message = mflow_message_function(receive_function())
+
+                    # Process only valid messages.
+                    if message is not None:
+                        processor.process_message(message)
+                        statistics.save_statistics(message.get_statistics())
+
+                    # If available, pass parameters to the mflow_processor.
+                    while not parameter_queue.empty():
+                        set_parameter(parameter_queue.get())
+
+                stream.disconnect()
+            except Exception as e:
+                _logger.error(e)
+                running_event.clear()
 
             # Save the last statistics events even if the sampling interval was not reached.
             statistics.flush()
             processor.stop()
+
         except Exception as e:
             _logger.error(e)
             running_event.clear()

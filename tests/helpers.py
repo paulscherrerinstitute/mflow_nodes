@@ -27,7 +27,8 @@ def setup_file_writing_receiver(connect_address, output_filename):
 
     processor = BaseProcessor()
     processor.process_message = process_message
-    receiver = NodeManager(processor_function=get_processor_function(processor=processor),
+    receiver = NodeManager(processor_function=get_processor_function(processor=processor,
+                                                                     connection_address=connect_address),
                            receiver_function=get_receiver_function(connection_address=connect_address),
                            processor_instance=processor)
 
