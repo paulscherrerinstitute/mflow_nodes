@@ -163,6 +163,18 @@ is not always present.
 }
 ```
 
+## Process parameters
+There are 2 kinds of parameters you can set for every mflow node. There are processor parameters (this are the 
+parameters that change from processor to processor and will not be described here) and there are process 
+(or mflow_node) parameters. This parameters are generic and you can set them on any mflow_node you are running. 
+
+The parameters are:
+
+- **n\_messages**: Number of messages a node should receive before it stops itself. If None or 0 (Default) the node 
+will not stop by itself.
+- **process\_uid**: UID to run the processor process.
+- **process\_gid**: GID to run the processor process.
+
 ## Testing tools
 There are 2 executable scripts to test your setup and debug any potential issues on the network:
 
