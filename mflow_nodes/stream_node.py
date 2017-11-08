@@ -113,31 +113,59 @@ def get_receiver_function(connection_address, receive_timeout=None, queue_size=N
 def get_processor_function(processor, connection_address, receive_timeout=None, queue_size=None, receive_raw=False):
     receive_timeout = receive_timeout or config.DEFAULT_RECEIVE_TIMEOUT
     queue_size = queue_size or config.DEFAULT_ZMQ_QUEUE_LENGTH
+    n_messages = None
 
-    def set_parameter(parameter_to_set):
-        if not isinstance(parameter_to_set, tuple) or len(parameter_to_set) != 2:
-            raise ValueError("Invalid parameter to set. Expected tuple of length 2, but received %s."
-                             % parameter_to_set)
+    def process_parameters_queue(parameter_queue):
+        # Set each parameter individually (either to the process or to the processor).
+        while not parameter_queue.empty():
+            parameter_to_set = parameter_queue.get()
 
-        # TODO: First set the gid and then the process id.
+            if not isinstance(parameter_to_set, tuple) or len(parameter_to_set) != 2:
+                raise ValueError("Invalid parameter to set. Expected tuple of length 2, but received %s."
+                                 % parameter_to_set)
 
-        if parameter_to_set[0] == config.PROCESS_UID_PARAMETER:
-            _logger.debug("Setting process UID to '%s'.", parameter_to_set[1])
-            os.setgid(parameter_to_set[1])
-            os.setuid(parameter_to_set[1])
+            parameter_name = parameter_to_set[0]
+            parameter_value = parameter_to_set[1]
 
-        # elif parameter_to_set[0] == config.PROCESS_GID_PARAMETER:
-        #     _logger.debug("Setting process GID to '%s'.", parameter_to_set[1])
+            process_parameters_to_set = {}
+            # The parameter is for this process.
+            if parameter_name in config.PROCESS_PARAMETERS:
+                process_parameters_to_set[parameter_name] = parameter_value
 
-        processor.set_parameter(parameter_to_set)
+            # The parameter is for the processor.
+            else:
+                processor.set_parameter(parameter_to_set)
+
+            if process_parameters_to_set:
+                set_process_parameters(process_parameters_to_set)
+
+    def set_process_parameters(parameters_to_set):
+
+        # Set process GID. Always before UID.
+        if config.PARAMETER_PROCESS_GID in parameters_to_set:
+            gid_to_set = parameters_to_set.pop(config.PARAMETER_PROCESS_GID)
+            os.setgid(gid_to_set)
+
+        # Set process UID.
+        if config.PARAMETER_PROCESS_UID in parameters_to_set:
+            uid_to_set = parameters_to_set.pop(config.PARAMETER_PROCESS_UID)
+            os.setgid(uid_to_set)
+
+        # Set n_frames.
+        if config.PARAMETER_N_MESSAGES in parameters_to_set:
+            nonlocal n_messages
+            n_messages = parameters_to_set.pop(config.PARAMETER_N_MESSAGES)
+
+        if parameters_to_set:
+            raise ValueError("Unknown process parameters. %s." % parameters_to_set)
 
     def processor_function(running_event, statistics_buffer, statistics_namespace, parameter_queue, data_queue):
         try:
             # Pass all the queued parameters before starting the mflow_processor.
-            while not parameter_queue.empty():
-                set_parameter(parameter_queue.get())
+            process_parameters_queue(parameter_queue)
 
             statistics = ThroughputStatistics(statistics_buffer, statistics_namespace)
+            total_messages = 0
             processor.start()
 
             try:
@@ -164,11 +192,16 @@ def get_processor_function(processor, connection_address, receive_timeout=None, 
                     # Process only valid messages.
                     if message is not None:
                         processor.process_message(message)
+
+                        total_messages += 1
+                        if n_messages and total_messages >= n_messages:
+                            _logger.info("Received %d frames. Stopping.", total_messages)
+                            running_event.clear()
+
                         statistics.save_statistics(message.get_statistics())
 
                     # If available, pass parameters to the mflow_processor.
-                    while not parameter_queue.empty():
-                        set_parameter(parameter_queue.get())
+                    process_parameters_queue(parameter_queue)
 
                 stream.disconnect()
             except Exception as e:

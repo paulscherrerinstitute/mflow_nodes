@@ -43,10 +43,10 @@ class NodeClient(object):
         parameters = {}
 
         if uid is not None:
-            parameters[config.PROCESS_UID_PARAMETER] = uid
+            parameters[config.PARAMETER_PROCESS_UID] = uid
 
         if gid is not None:
-            parameters[config.PROCESS_GID_PARAMETER] = gid
+            parameters[config.PARAMETER_PROCESS_GID] = gid
 
         if parameters:
             return self.set_parameters(parameters)

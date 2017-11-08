@@ -30,7 +30,7 @@ class ProxyTest(unittest.TestCase):
         processor = ProxyProcessor(proxy_function=proxy_function)
 
         initial_parameters = {
-            "binding_address": "tcp://127.0.0.1:40001"
+            "binding_address": writer_address
         }
         self.proxy = NodeManager(processor_function=get_processor_function(connection_address=proxy_address, processor=processor),
                                  receiver_function=get_receiver_function(connection_address=proxy_address),
