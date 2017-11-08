@@ -144,17 +144,23 @@ def get_processor_function(processor, connection_address, receive_timeout=None, 
         # Set process GID. Always before UID.
         if config.PARAMETER_PROCESS_GID in parameters_to_set:
             gid_to_set = parameters_to_set.pop(config.PARAMETER_PROCESS_GID)
+
+            _logger.debug("Update process parameter '%s'='%s'", config.PARAMETER_PROCESS_GID, gid_to_set)
             os.setgid(gid_to_set)
 
         # Set process UID.
         if config.PARAMETER_PROCESS_UID in parameters_to_set:
             uid_to_set = parameters_to_set.pop(config.PARAMETER_PROCESS_UID)
-            os.setgid(uid_to_set)
+
+            _logger.debug("Update process parameter '%s'='%s'", config.PARAMETER_PROCESS_UID, uid_to_set)
+            os.setuid(uid_to_set)
 
         # Set n_frames.
         if config.PARAMETER_N_MESSAGES in parameters_to_set:
             nonlocal n_messages
             n_messages = parameters_to_set.pop(config.PARAMETER_N_MESSAGES)
+
+            _logger.debug("Update process parameter '%s'='%s'", config.PARAMETER_N_MESSAGES, n_messages)
 
         if parameters_to_set:
             raise ValueError("Unknown process parameters. %s." % parameters_to_set)
