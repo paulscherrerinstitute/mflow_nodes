@@ -68,14 +68,13 @@ def start_web_interface(process, instance_name, host, port):
         return {"status": "ok",
                 "data": process.get_parameters()}
 
-    def _set_parameters(items):
-        for parameter in items:
-            _logger.debug("Passing parameter '%s'='%s' to external process." % parameter)
-            process.set_parameter(parameter)
+    def _set_parameters(parameters):
+        _logger.debug("Passing parameters %s to external process." % parameters)
+        process.set_parameters(parameters)
 
     @app.post(api_path.format(url="parameters"))
     def set_parameter():
-        _set_parameters(request.json.items())
+        _set_parameters(request.json)
         return {"status": "ok",
                 "message": "Parameters set successfully."}
 
@@ -104,7 +103,7 @@ def start_web_interface(process, instance_name, host, port):
     @app.get(api_path.format(url="start"))
     def start():
         if request.json:
-            _set_parameters(request.json.items())
+            _set_parameters(request.json)
 
         _logger.debug("Starting process.")
         process.start()
@@ -200,7 +199,7 @@ class RestInterfacedProcess(object):
                            in sorted(vars(self).items())
                            if not key.startswith('_'))
 
-    def set_parameter(self, parameter):
+    def set_parameters(self, parameter):
         """
         Set the parameters on the process.
         :param parameter: Parameter to set, in (parameter_name, parameter_value) form.

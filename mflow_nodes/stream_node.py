@@ -116,6 +116,8 @@ def get_processor_function(processor, connection_address, receive_timeout=None, 
     n_messages = None
 
     def process_parameters_queue(parameter_queue):
+        process_parameters_to_set = {}
+
         # Set each parameter individually (either to the process or to the processor).
         while not parameter_queue.empty():
             parameter_to_set = parameter_queue.get()
@@ -127,17 +129,15 @@ def get_processor_function(processor, connection_address, receive_timeout=None, 
             parameter_name = parameter_to_set[0]
             parameter_value = parameter_to_set[1]
 
-            process_parameters_to_set = {}
             # The parameter is for this process.
             if parameter_name in config.PROCESS_PARAMETERS:
                 process_parameters_to_set[parameter_name] = parameter_value
-
             # The parameter is for the processor.
             else:
                 processor.set_parameter(parameter_to_set)
 
-            if process_parameters_to_set:
-                set_process_parameters(process_parameters_to_set)
+        if process_parameters_to_set:
+            set_process_parameters(process_parameters_to_set)
 
     def set_process_parameters(parameters_to_set):
 

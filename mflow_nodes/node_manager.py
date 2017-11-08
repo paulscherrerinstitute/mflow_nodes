@@ -119,21 +119,21 @@ class NodeManager(RestInterfacedProcess):
             self.processor_thread.join()
             self.processor_thread = None
 
-    def set_parameter(self, parameter):
+    def set_parameters(self, parameters):
         """
         Pass a parameter to the processing function. It needs to be in tuple format: (name, value).
-        :param parameter: Tuple of (parameter_name, parameter_value).
+        :param parameters: Dictionary of parameters.
         :return: None.
         """
-        if not isinstance(parameter, tuple) or len(parameter) != 2:
-            raise ValueError("Invalid parameter to set. Expected tuple of length 2, but received '%s'." % parameter)
+        for parameter_name, parameter_value in parameters.items():
+            # Update current parameters.
+            self.current_parameters[parameter_name] = parameter_value
 
-        self.current_parameters[parameter[0]] = parameter[1]
-        self.parameter_queue.put(parameter)
+            # Set the current parameters to the queue.
+            self.parameter_queue.put((parameter_name, parameter_value))
 
     def _set_current_parameters(self):
-        for parameter in self.current_parameters.items():
-            self.set_parameter(parameter)
+        self.set_parameters(self.current_parameters)
 
     def get_process_name(self):
         return self._process_name
@@ -293,9 +293,18 @@ class NodeManagerProxy(object):
         else:
             _logger.info("External processor not running. Parameter set added to queue.")
 
-    def set_parameter(self, parameter):
-        self.current_parameters[parameter[0]] = parameter[1]
-        self._set_current_parameters()
+    def set_parameters(self, parameters):
+        """
+        Pass a parameter to the processing function. It needs to be in tuple format: (name, value).
+        :param parameters: Dictionary of parameters.
+        :return: None.
+        """
+        for parameter_name, parameter_value in parameters.items():
+            # Update current parameters.
+            self.current_parameters[parameter_name] = parameter_value
+
+            # Set the current parameters to the queue.
+            self.parameter_queue.put((parameter_name, parameter_value))
 
     def get_parameters(self):
         if self.is_process_running():
