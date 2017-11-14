@@ -147,14 +147,22 @@ def get_processor_function(processor, connection_address, receive_timeout=None, 
             gid_to_set = parameters_to_set.pop(config.PARAMETER_PROCESS_GID)
 
             _logger.debug("Update process parameter '%s'='%s'", config.PARAMETER_PROCESS_GID, gid_to_set)
-            os.setgid(gid_to_set)
+
+            if gid_to_set is not None:
+                os.setgid(gid_to_set)
+            else:
+                _logger.info("GID cannot be None. Not setting.")
 
         # Set process UID.
         if config.PARAMETER_PROCESS_UID in parameters_to_set:
             uid_to_set = parameters_to_set.pop(config.PARAMETER_PROCESS_UID)
 
             _logger.debug("Update process parameter '%s'='%s'", config.PARAMETER_PROCESS_UID, uid_to_set)
-            os.setuid(uid_to_set)
+
+            if uid_to_set is not None:
+                os.setuid(uid_to_set)
+            else:
+                _logger.info("UID cannot be None. Not setting.")
 
         # Set n_frames.
         if config.PARAMETER_N_MESSAGES in parameters_to_set:
