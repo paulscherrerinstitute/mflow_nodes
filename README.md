@@ -174,6 +174,7 @@ The parameters are:
 will not stop by itself.
 - **process\_uid**: UID to run the processor process.
 - **process\_gid**: GID to run the processor process.
+- **disable\_processing"**: If True, receive but not process the messages. Used for debugging other components.
 
 ## Testing tools
 There are 2 executable scripts to test your setup and debug any potential issues on the network:
