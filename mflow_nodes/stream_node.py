@@ -114,6 +114,7 @@ def get_processor_function(processor, connection_address, receive_timeout=None, 
     receive_timeout = receive_timeout or config.DEFAULT_RECEIVE_TIMEOUT
     queue_size = queue_size or config.DEFAULT_ZMQ_QUEUE_LENGTH
     n_messages = None
+    disable_processing = False
 
     def process_parameters_queue(parameter_queue):
         process_parameters_to_set = {}
@@ -162,6 +163,12 @@ def get_processor_function(processor, connection_address, receive_timeout=None, 
 
             _logger.debug("Update process parameter '%s'='%s'", config.PARAMETER_N_MESSAGES, n_messages)
 
+        if config.PARAMETER_DISABLE_PROCESSING in parameters_to_set:
+            nonlocal disable_processing
+            disable_processing = parameters_to_set.pop(config.PARAMETER_DISABLE_PROCESSING)
+
+            _logger.debug("Update process parameter '%s'='%s'", config.PARAMETER_DISABLE_PROCESSING, disable_processing)
+
         if parameters_to_set:
             raise ValueError("Unknown process parameters. %s." % parameters_to_set)
 
@@ -196,7 +203,7 @@ def get_processor_function(processor, connection_address, receive_timeout=None, 
                     message = mflow_message_function(receive_function())
 
                     # Process only valid messages.
-                    if message is not None:
+                    if message is not None and not disable_processing:
                         processor.process_message(message)
 
                         total_messages += 1
