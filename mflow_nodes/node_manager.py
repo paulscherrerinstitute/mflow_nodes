@@ -2,13 +2,12 @@ import uuid
 from argparse import Namespace
 from collections import deque
 from logging import getLogger
-from queue import Queue
-from threading import Event
-from threading import Thread
 
 import multiprocessing
 
 from mflow.tools import ThroughputStatistics
+from multiprocessing import Process, Event, Queue
+
 from mflow_nodes import config
 from mflow_nodes.rest_api.rest_server import RestInterfacedProcess
 
@@ -39,14 +38,11 @@ class NodeManager(RestInterfacedProcess):
         _logger.debug("Using %d receiving threads." % self.n_receiving_threads)
 
         self.processor_function = processor_function
-        self.processor_thread = None
+        self.processor_process = None
         self.processor_running = Event()
+        self.parameter_queue = Queue()
 
         self.receiver_function = receiver_function
-        self.receiver_threads = []
-        self.receivers_running = [Event()] * self.n_receiving_threads
-
-        self.parameter_queue = Queue()
 
         self.statistics_buffer = deque(maxlen=config.DEFAULT_STATISTICS_BUFFER_LENGTH)
         self.statistics_namespace = Namespace()
@@ -62,7 +58,7 @@ class NodeManager(RestInterfacedProcess):
         Return the status of the process function (running or not).
         :return: True if running, otherwise False.
         """
-        return (self.processor_thread is not None and self.processor_thread.is_alive()
+        return (self.processor_process is not None and self.processor_process.is_alive()
                 and self.processor_running.is_set())
         # and (all(thr and thr.is_alive() and running.is_set()
         #      for thr, running in zip(self.receiver_threads, self.receivers_running))
@@ -79,24 +75,16 @@ class NodeManager(RestInterfacedProcess):
 
         data_queue = deque(maxlen=self.data_queue_size)
 
-        self.processor_thread = Thread(target=self.processor_function,
-                                       args=(self.processor_running, self.statistics_buffer, self.statistics_namespace,
+        self.processor_process = Process(target=self.processor_function,
+                                         args=(
+                                             self.processor_running, self.statistics_buffer, self.statistics_namespace,
                                              self.parameter_queue, data_queue))
 
-        # for index in range(self.n_receiving_threads):
-        #     self.receiver_threads.append(Thread(target=self.receiver_function,
-        #                                         args=(self.receivers_running[index], data_queue)))
-
         self._set_current_parameters()
-        self.processor_thread.start()
-
-        # Start all receiving threads.
-        # for thread in self.receiver_threads:
-        #     thread.start()
+        self.processor_process.start()
 
         # Both thread need to set the running event. If not, something went wrong.
         if not self.processor_running.wait(config.DEFAULT_STARTUP_TIMEOUT):
-                    # and all(running.wait(config.DEFAULT_STARTUP_TIMEOUT) for running in self.receivers_running)):
             error = "An exception occurred during the startup."
             _logger.error(error)
             raise ValueError(error)
@@ -107,17 +95,11 @@ class NodeManager(RestInterfacedProcess):
         """
         _logger.debug("Stopping node.")
 
-        for running in self.receivers_running:
-            running.clear()
         self.processor_running.clear()
 
-        # for thread in self.receiver_threads:
-        #     thread.join()
-        # self.receiver_threads.clear()
-
-        if self.processor_thread is not None:
-            self.processor_thread.join()
-            self.processor_thread = None
+        if self.processor_process is not None:
+            self.processor_process.join()
+            self.processor_process = None
 
     def set_parameters(self, parameters):
         """
