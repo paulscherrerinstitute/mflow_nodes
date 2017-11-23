@@ -50,4 +50,10 @@ class BaseProcessor(object):
         """
         self._logger.debug("Stopping mflow_processor.")
 
+    def is_running(self):
+        """
+        Check if the processor is still running.
+        :return:
+        """
+        return True
 

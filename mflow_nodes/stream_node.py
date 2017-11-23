@@ -221,6 +221,9 @@ def get_processor_function(processor, connection_address, receive_timeout=None, 
 
                         statistics.save_statistics(message.get_statistics())
 
+                    if not processor.is_running():
+                        running_event.clear()
+
                     # If available, pass parameters to the mflow_processor.
                     process_parameters_queue(parameter_queue)
 
