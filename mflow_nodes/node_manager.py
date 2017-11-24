@@ -40,6 +40,7 @@ class NodeManager(RestInterfacedProcess):
         self.processor_function = processor_function
         self.processor_process = None
         self.processor_running = Event()
+
         self.parameter_queue = Queue()
 
         self.receiver_function = receiver_function
@@ -60,9 +61,6 @@ class NodeManager(RestInterfacedProcess):
         """
         return (self.processor_process is not None and self.processor_process.is_alive()
                 and self.processor_running.is_set())
-        # and (all(thr and thr.is_alive() and running.is_set()
-        #      for thr, running in zip(self.receiver_threads, self.receivers_running))
-        #      )
 
     def start(self):
         """
