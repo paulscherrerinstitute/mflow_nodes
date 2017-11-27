@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name='mflow_nodes',
-    version="1.2.9",
+    version="1.3.0",
     description="mflow nodes is a library for building processing nodes on top of an mflow stream.",
     author='Paul Scherrer Institute',
     author_email='andrej.babic@psi.ch',
