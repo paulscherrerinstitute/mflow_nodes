@@ -87,7 +87,7 @@ class NodeClient(object):
         if response["status"] != "ok":
             raise ValueError("Cannot reset node. Original error:%s\n" % response["message"])
 
-        return response["message"]
+        return response["data"]
 
     def get_status(self):
         """
