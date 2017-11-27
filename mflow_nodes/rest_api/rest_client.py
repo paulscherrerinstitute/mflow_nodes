@@ -77,6 +77,18 @@ class NodeClient(object):
 
         return response["message"]
 
+    def reset(self):
+        """
+        Reset the node.
+        :return: Response message.
+        """
+        reset_command_url = self._api_address.format(url="reset")
+        response = requests.post(reset_command_url).json()
+        if response["status"] != "ok":
+            raise ValueError("Cannot reset node. Original error:%s\n" % response["message"])
+
+        return response["message"]
+
     def get_status(self):
         """
         Get node status.

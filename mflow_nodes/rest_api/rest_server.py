@@ -68,6 +68,13 @@ def start_web_interface(process, instance_name, host, port):
         return {"status": "ok",
                 "data": process.get_parameters()}
 
+    @app.post(api_path.format(url="reset"))
+    def reset():
+        process.reset()
+
+        return {"status": "ok",
+                "data": process.get_parameters()}
+
     def _set_parameters(parameters):
         _logger.debug("Passing parameters %s to external process." % parameters)
         process.set_parameters(parameters)
@@ -219,3 +226,8 @@ class RestInterfacedProcess(object):
         :return: List of statistics events.
         """
         pass
+
+    def reset(self):
+        """
+        Reset the status of the integration.
+        """

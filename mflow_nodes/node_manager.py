@@ -5,6 +5,7 @@ from logging import getLogger
 
 import multiprocessing
 
+import copy
 from mflow.tools import ThroughputStatistics
 from multiprocessing import Process, Event, Queue
 
@@ -32,8 +33,10 @@ class NodeManager(RestInterfacedProcess):
         """
         self.processor_instance = processor_instance
         self.data_queue_size = data_queue_size or config.DEFAULT_DATA_QUEUE_LENGTH
-        self.current_parameters = initial_parameters or {}
+        self.initial_parameters = initial_parameters or {}
         self.n_receiving_threads = n_receiving_threads or config.DEFAULT_N_RECEIVING_THREADS
+
+        self.current_parameters = copy.deepcopy(self.initial_parameters)
 
         _logger.debug("Using %d receiving threads." % self.n_receiving_threads)
 
@@ -134,6 +137,10 @@ class NodeManager(RestInterfacedProcess):
 
     def get_statistics_raw(self):
         return list(self.statistics.get_statistics_raw())
+
+    def reset(self):
+        self.stop()
+        self.current_parameters = copy.deepcopy(self.initial_parameters)
 
 
 def external_process_wrapper(node_manager, communication_pipe, stop_event):
